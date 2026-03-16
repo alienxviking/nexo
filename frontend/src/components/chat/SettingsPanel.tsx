@@ -17,7 +17,7 @@ export default function SettingsPanel({
   const [notifications, setNotifications] = useState(true);
 
   return (
-    <div className="w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)]">
+    <div className="w-full md:w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)]">
       <div className="flex-1 overflow-y-auto">
         {/* Profile Card */}
         <div className="p-6 pt-8 flex flex-col items-center text-center">

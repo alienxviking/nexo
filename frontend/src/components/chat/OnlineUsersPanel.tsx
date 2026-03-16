@@ -78,7 +78,7 @@ export default function OnlineUsersPanel({
   const filteredOffline = filter ? offlineUsers.filter(u => u.name.toLowerCase().includes(filter.toLowerCase())) : offlineUsers;
 
   return (
-    <div className="w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)]">
+    <div className="w-full md:w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)]">
       {/* Search */}
       <div className="p-4 pt-6 bg-[var(--color-sidebar)]/50">
         <div className="relative">

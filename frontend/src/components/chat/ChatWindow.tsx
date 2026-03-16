@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
-import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download } from "lucide-react";
+import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import EmojiPicker, { Theme, Emoji, EmojiStyle } from "emoji-picker-react";
 
@@ -54,9 +54,11 @@ interface Message {
 export default function ChatWindow({
   activeUser,
   conversationId,
+  onBack,
 }: {
   activeUser: User;
   conversationId: string;
+  onBack?: () => void;
 }) {
   const { token, user: currentUser } = useAuth();
   const { socket } = useSocket();
@@ -529,8 +531,16 @@ export default function ChatWindow({
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative bg-gradient-to-br from-[var(--color-bg)] to-[var(--color-sidebar)]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[var(--color-glass-border)] bg-[var(--color-glass-bg)] backdrop-blur-xl shadow-sm z-20 sticky top-0 m-2 rounded-[2rem]">
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between p-3 md:p-4 border-b border-[var(--color-glass-border)] bg-[var(--color-glass-bg)] backdrop-blur-xl shadow-sm z-20 sticky top-0 md:m-2 rounded-none md:rounded-[2rem]">
+        <div className="flex items-center space-x-2 md:space-x-3">
+          {onBack && (
+            <button 
+              onClick={onBack}
+              className="md:hidden p-2 -ml-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
           <div className="relative">
             <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-white/10" style={{ background: getAvatarGradient(currentActiveUser.name) }}>
               {currentActiveUser.name.charAt(0)}
@@ -611,7 +621,7 @@ export default function ChatWindow({
       )}
 
       {/* Messages Area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 relative">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 relative">
         {messages.map((msg, index) => {
           const isMe = msg.senderId === currentUser?.id;
           const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
@@ -656,7 +666,7 @@ export default function ChatWindow({
                 )}
                 
                 <div
-                  className={`max-w-[70%] ${isEmojiOnly ? "p-0" : "px-5 py-3 rounded-[2rem]"} ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'} ${
+                  className={`max-w-[85%] md:max-w-[70%] ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3 rounded-[1.5rem] md:rounded-[2rem]"} ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'} ${
                     msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
                     isEmojiOnly ? "bg-transparent shadow-none" :
                     isMe
@@ -795,7 +805,7 @@ export default function ChatWindow({
       )}
 
       {/* Input Area */}
-      <div className="p-4 bg-[var(--color-glass-bg)] backdrop-blur-xl border-t border-[var(--color-glass-border)] flex flex-col">
+      <div className="p-3 md:p-4 bg-[var(--color-glass-bg)] backdrop-blur-xl border-t border-[var(--color-glass-border)] flex flex-col">
         {(replyingTo || editingMessage) && (
           <div className="flex items-center justify-between bg-[var(--color-bg)]/80 backdrop-blur-md border border-[var(--color-glass-border)] px-4 py-3 rounded-2xl mb-2 shadow-sm z-0">
             <div className="text-sm truncate opacity-80">
@@ -866,7 +876,7 @@ export default function ChatWindow({
             )}
           </div>
           
-          <div className="flex-1 bg-[var(--color-bg)]/60 backdrop-blur-md border border-[var(--color-glass-border)] rounded-[2rem] flex items-center px-6 py-4 focus-within:ring-2 focus-within:ring-[var(--color-primary)]/30 focus-within:bg-[var(--color-bg)] transition-all shadow-inner">
+          <div className="flex-1 bg-[var(--color-bg)]/60 backdrop-blur-md border border-[var(--color-glass-border)] rounded-[2rem] flex items-center px-4 md:px-6 py-3 md:py-4 focus-within:ring-2 focus-within:ring-[var(--color-primary)]/30 focus-within:bg-[var(--color-bg)] transition-all shadow-inner">
             {uploading ? (
               <span className="text-sm text-[var(--color-text-secondary)] italic">Uploading...</span>
             ) : (

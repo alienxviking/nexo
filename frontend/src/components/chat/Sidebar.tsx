@@ -196,7 +196,7 @@ export default function Sidebar({
   };
 
   return (
-    <div className="w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] relative">
+    <div className="w-full md:w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] relative">
       
       {/* Toast notifications */}
       <div className="absolute top-0 left-0 right-0 z-50 p-2 space-y-2 pointer-events-none">
