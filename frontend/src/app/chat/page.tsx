@@ -92,7 +92,7 @@ export default function ChatPage() {
               title={label}
             >
               {activeTab === tab && (
-                <div className="absolute -left-4 w-1.5 h-6 bg-[var(--color-primary)] rounded-r-full animate-in slide-in-from-left-2 duration-300"></div>
+                <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[var(--color-primary)] rounded-r-full animate-in slide-in-from-left-2 duration-300"></div>
               )}
               <Icon className="w-6 h-6" />
             </button>
@@ -107,7 +107,7 @@ export default function ChatPage() {
             className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors mt-auto"
             title="Logout"
           >
-            <LogOut className="w-6 h-6 ml-0.5" />
+            <LogOut className="w-6 h-6" />
           </button>
         </div>
       </div>

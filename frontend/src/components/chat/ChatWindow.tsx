@@ -5,7 +5,20 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
-import EmojiPicker, { Theme } from "emoji-picker-react";
+import EmojiPicker, { Theme, Emoji, EmojiStyle } from "emoji-picker-react";
+
+const isOnlyEmoji = (str: string) => {
+  // Regex for emojis only (including multiple emojis and spaces)
+  const emojiRegex = /^(\p{Extended_Pictographic}|\s)+$/u;
+  return emojiRegex.test(str.trim());
+};
+
+const getEmojiUnified = (emoji: string) => {
+  return Array.from(emoji)
+    .map(char => char.codePointAt(0)?.toString(16).toLowerCase())
+    .filter(Boolean)
+    .join("-");
+};
 import { getAvatarGradient } from "@/lib/avatarGradients";
 import VoicePlayer from "./VoicePlayer";
 import { API_URL } from "@/lib/config";
@@ -100,8 +113,7 @@ export default function ChatWindow({
     const handleReceiveMessage = (message: Message) => {
       if (message.conversationId === conversationId) {
         setMessages((prev) => [...prev, message]);
-        socket.emit("mark_seen", { 
-          messageId: message.id, 
+        socket.emit("mark_all_seen", { 
           conversationId, 
           senderId: message.senderId 
         });
@@ -123,8 +135,15 @@ export default function ChatWindow({
       }
     };
 
-    const handleMessageSent = (message: Message) => {
-      setMessages((prev) => [...prev, message]);
+    const handleMessageSent = (message: any) => {
+      setMessages((prev) => {
+        const tempId = message.tempId;
+        const exists = prev.find(m => m.id === message.id);
+        if (exists) return prev;
+
+        const filtered = tempId ? prev.filter(m => m.id !== tempId) : prev;
+        return [...filtered, message];
+      });
       // Always scroll to bottom for own messages
       setTimeout(() => scrollToBottom(), 100);
     };
@@ -139,6 +158,14 @@ export default function ChatWindow({
       if (convId === conversationId) {
         setMessages((prev) =>
            prev.map((m) => (m.id === messageId ? { ...m, status: "SEEN" } : m))
+        );
+      }
+    };
+
+    const handleConversationSeen = ({ conversationId: convId }: any) => {
+      if (convId === conversationId) {
+        setMessages((prev) =>
+          prev.map((m) => (m.senderId === currentUser?.id ? { ...m, status: "SEEN" } : m))
         );
       }
     };
@@ -196,6 +223,7 @@ export default function ChatWindow({
     socket.on("message_sent", handleMessageSent);
     socket.on("message_delivered", handleMessageDelivered);
     socket.on("message_seen", handleMessageSeen);
+    socket.on("conversation_seen", handleConversationSeen);
     socket.on("typing", handleTyping);
     socket.on("message_edited", handleMessageEdited);
     socket.on("message_deleted", handleMessageDeleted);
@@ -208,6 +236,7 @@ export default function ChatWindow({
       socket.off("message_sent", handleMessageSent);
       socket.off("message_delivered", handleMessageDelivered);
       socket.off("message_seen", handleMessageSeen);
+      socket.off("conversation_seen", handleConversationSeen);
       socket.off("typing", handleTyping);
       socket.off("message_edited", handleMessageEdited);
       socket.off("message_deleted", handleMessageDeleted);
@@ -253,15 +282,13 @@ export default function ChatWindow({
       
       // Mark loaded unread messages from the other user as SEEN
       if (socket && Array.isArray(data)) {
-        data.forEach((msg: Message) => {
-          if (msg.senderId === currentActiveUser.id && msg.status !== "SEEN") {
-            socket.emit("mark_seen", {
-              messageId: msg.id,
-              conversationId,
-              senderId: msg.senderId
-            });
-          }
-        });
+        const hasUnread = data.some((msg: Message) => msg.senderId === currentActiveUser.id && msg.status !== "SEEN");
+        if (hasUnread) {
+          socket.emit("mark_all_seen", {
+            conversationId,
+            senderId: currentActiveUser.id
+          });
+        }
       }
     } catch (err) {
       console.error(err);
@@ -270,12 +297,19 @@ export default function ChatWindow({
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !socket) return;
+    if (!newMessage.trim() || !socket || !currentUser) return;
+
+    const content = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
+    const now = new Date().toISOString();
 
     if (editingMessage) {
+      // For editing, we update immediately locally too
+      setMessages(prev => prev.map(m => m.id === editingMessage.id ? { ...m, content, isEdited: true } : m));
+      
       socket.emit("edit_message", {
         messageId: editingMessage.id,
-        newContent: newMessage.trim(),
+        newContent: content,
         conversationId,
         receiverId: currentActiveUser.id,
       });
@@ -291,13 +325,34 @@ export default function ChatWindow({
         selfDestructAtDate = new Date(Date.now() + selfDestructTimer * 1000).toISOString();
       }
 
+      // Optimistic message
+      if (!scheduledAtDate) {
+        const optimisticMsg: Message = {
+          id: tempId,
+          content,
+          senderId: currentUser.id,
+          conversationId,
+          status: "SENT",
+          createdAt: now,
+          type: "TEXT",
+          replyTo: replyingTo ? {
+            id: replyingTo.id,
+            content: replyingTo.content,
+            sender: { id: replyingTo.senderId, name: replyingTo.senderId === currentUser.id ? currentUser.name : currentActiveUser.name }
+          } : null,
+        };
+        setMessages(prev => [...prev, optimisticMsg]);
+        setTimeout(() => scrollToBottom(), 50);
+      }
+
       socket.emit("send_message", {
         conversationId,
         receiverId: currentActiveUser.id,
-        content: newMessage.trim(),
+        content,
         replyToId: replyingTo?.id || null,
         scheduledAt: scheduledAtDate,
         selfDestructAt: selfDestructAtDate,
+        tempId, // Pass tempId so server can echo it back
       });
     }
 
@@ -559,6 +614,7 @@ export default function ChatWindow({
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 relative">
         {messages.map((msg, index) => {
           const isMe = msg.senderId === currentUser?.id;
+          const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
           const showTime = index === 0 || new Date(msg.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 300000; // 5 mins
 
           return (
@@ -580,9 +636,15 @@ export default function ChatWindow({
               <div className="flex items-center space-x-2">
                 {isMe && (
                   <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
-                    <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform text-sm">👍</button>
-                    <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform text-sm">❤️</button>
-                    <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform text-sm">😂</button>
+                    <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                      <Emoji unified={getEmojiUnified("👍")} size={18} emojiStyle={EmojiStyle.APPLE} />
+                    </button>
+                    <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                      <Emoji unified={getEmojiUnified("❤️")} size={18} emojiStyle={EmojiStyle.APPLE} />
+                    </button>
+                    <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                      <Emoji unified={getEmojiUnified("😂")} size={18} emojiStyle={EmojiStyle.APPLE} />
+                    </button>
                     <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
                     {msg.content !== "This message was deleted" && !msg.isDeleted && (
                       <>
@@ -594,8 +656,9 @@ export default function ChatWindow({
                 )}
                 
                 <div
-                  className={`max-w-[70%] px-5 py-3 rounded-[2rem] ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'} ${
+                  className={`max-w-[70%] ${isEmojiOnly ? "p-0" : "px-5 py-3 rounded-[2rem]"} ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'} ${
                     msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
+                    isEmojiOnly ? "bg-transparent shadow-none" :
                     isMe
                       ? "bg-[var(--color-primary)] text-[var(--color-background)] shadow-[0_2px_10px_-4px_var(--color-primary)]"
                       : "bg-[var(--color-glass-bg)] backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] shadow-sm"
@@ -635,10 +698,18 @@ export default function ChatWindow({
                   )}
 
                   {(msg.type === "TEXT" || msg.isDeleted) && (
-                    <p className="text-[15px] leading-relaxed break-words">{msg.content}</p>
+                    <div className={`leading-relaxed break-words ${isEmojiOnly ? "flex flex-wrap gap-1 my-2" : "text-[15px]"}`}>
+                      {isEmojiOnly ? (
+                        msg.content.match(/(\p{Extended_Pictographic}+(?:\u{200D}\p{Extended_Pictographic}+)*|\p{Emoji_Presentation}|\s)/gu)?.map((char, i) => (
+                           char.trim() === "" ? <span key={i} className="w-2" /> : <Emoji key={i} unified={getEmojiUnified(char)} size={64} emojiStyle={EmojiStyle.APPLE} />
+                        ))
+                      ) : (
+                        msg.content
+                      )}
+                    </div>
                   )}
                   
-                  <div className={`flex items-center justify-end mt-1 space-x-1 ${msg.isDeleted ? "text-[var(--color-text-secondary)]" : isMe ? "text-blue-100" : "text-[var(--color-text-secondary)]"}`}>
+                  <div className={`flex items-center justify-end mt-1 space-x-1 ${msg.isDeleted ? "text-[var(--color-text-secondary)]" : (isEmojiOnly || !isMe) ? "text-[var(--color-text-secondary)]" : "text-blue-100"}`}>
                     {msg.isEdited && !msg.isDeleted && <span className="text-[10px] italic mr-1">edited</span>}
                     <span className="text-[10px] opacity-80">
                       {format(new Date(msg.createdAt), "h:mm a")}
@@ -655,9 +726,15 @@ export default function ChatWindow({
 
                 {!isMe && (
                    <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
-                      <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform text-sm">👍</button>
-                      <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform text-sm">❤️</button>
-                      <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform text-sm">😂</button>
+                      <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                        <Emoji unified={getEmojiUnified("👍")} size={18} emojiStyle={EmojiStyle.APPLE} />
+                      </button>
+                      <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                        <Emoji unified={getEmojiUnified("❤️")} size={18} emojiStyle={EmojiStyle.APPLE} />
+                      </button>
+                      <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                        <Emoji unified={getEmojiUnified("😂")} size={18} emojiStyle={EmojiStyle.APPLE} />
+                      </button>
                       <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
                    </div>
                 )}
@@ -667,7 +744,7 @@ export default function ChatWindow({
                 <div className={`flex -mt-2.5 z-10 animate-in fade-in zoom-in duration-300 ${isMe ? "mr-4" : "ml-4"}`}>
                   <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full px-1.5 py-0.5 shadow-sm text-xs flex space-x-1 items-center">
                     {Array.from(new Set(msg.reactions.map(r => r.emoji))).map(emoji => (
-                       <span key={emoji}>{emoji}</span>
+                       <Emoji key={emoji} unified={getEmojiUnified(emoji)} size={14} emojiStyle={EmojiStyle.APPLE} />
                     ))}
                     <span className="text-[10px] text-[var(--color-text-secondary)] font-semibold">{msg.reactions.length}</span>
                   </div>

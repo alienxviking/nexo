@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { getAvatarGradient } from "@/lib/avatarGradients";
@@ -12,6 +13,7 @@ interface User {
   name: string;
   avatarUrl: string | null;
   status: string;
+  lastSeen?: string;
 }
 
 export default function OnlineUsersPanel({
@@ -30,9 +32,9 @@ export default function OnlineUsersPanel({
 
   useEffect(() => {
     if (!socket) return;
-    const handleUserStatus = ({ userId, status }: any) => {
+    const handleUserStatus = ({ userId, status, lastSeen }: any) => {
       setUsers(prev =>
-        prev.map(u => u.id === userId ? { ...u, status } : u)
+        prev.map(u => u.id === userId ? { ...u, status, lastSeen } : u)
       );
     };
     socket.on("user_status", handleUserStatus);
@@ -140,7 +142,9 @@ export default function OnlineUsersPanel({
                 </div>
                 <div className="ml-3">
                   <p className="text-[var(--color-text-main)] font-semibold text-sm">{u.name}</p>
-                  <p className="text-[var(--color-text-secondary)] text-xs">Offline</p>
+                  <p className="text-[var(--color-text-secondary)] text-xs">
+                    {u.lastSeen ? `Last seen ${format(new Date(u.lastSeen), "MMM d, h:mm a")}` : "Offline"}
+                  </p>
                 </div>
               </div>
             ))}

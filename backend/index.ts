@@ -3,8 +3,6 @@ import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import dotenv from "dotenv";
-import { PrismaClient } from "@prisma/client";
-import { createClient } from "redis";
 import { prisma } from "./lib/db";
 
 dotenv.config();
@@ -28,10 +26,6 @@ import uploadRoutes from "./routes/upload";
 import conversationRoutes from "./routes/conversations";
 import { setupSocketHandlers } from "./lib/socket";
 
-// Redis setup for future pub/sub queue scaling
-const redisClient = createClient();
-redisClient.on("error", (err: any) => console.log("Redis Client Error", err));
-
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
@@ -42,9 +36,6 @@ app.use("/api/conversations", conversationRoutes);
 app.use("/api/upload", uploadRoutes);
 
 async function startServer() {
-  await redisClient.connect();
-  console.log("Connected to Redis");
-
   setupSocketHandlers(io);
 
   const PORT = process.env.PORT || 4000;

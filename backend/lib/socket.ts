@@ -5,8 +5,7 @@ import jwt from "jsonwebtoken";
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 
 // Track connected users
-// Map of userId -> socket.id
-const userSockets = new Map<string, string>();
+// Using Socket.io rooms for reliable delivery across multiple tabs
 
 export function setupSocketHandlers(io: SocketIOServer) {
   // Authentication middleware for Socket.io
@@ -24,9 +23,9 @@ export function setupSocketHandlers(io: SocketIOServer) {
 
   io.on("connection", (socket: Socket) => {
     const userId = (socket as any).userId;
-    userSockets.set(userId, socket.id);
+    socket.join(userId);
     
-    console.log(`User connected: ${userId} (${socket.id})`);
+    console.log(`User connected: ${userId} and joined room ${userId}`);
 
     // Update DB status to online and broadcast
     prisma.user.update({
@@ -36,7 +35,13 @@ export function setupSocketHandlers(io: SocketIOServer) {
     .then(() => {
       socket.broadcast.emit("user_status", { userId, status: "ONLINE", lastSeen: null });
     })
-    .catch(err => console.error("Error setting online status", err));
+    .catch(err => {
+      if (err.code === 'P2025') {
+        console.warn(`User ${userId} not found in database. They might need to re-register.`);
+      } else {
+        console.error("Error setting online status", err);
+      }
+    });
 
     socket.on("send_message", async (data) => {
       const { conversationId, content, receiverId } = data;
@@ -61,20 +66,21 @@ export function setupSocketHandlers(io: SocketIOServer) {
           },
         });
 
-        // 1. Send receipt back to sender
-        socket.emit("message_sent", message);
+        // 1. Send receipt back to ALL sender's sessions
+        io.to(userId).emit("message_sent", { ...message, tempId: data.tempId });
 
-        // 2. Deliver to receiver if online
-        const receiverSocketId = userSockets.get(receiverId);
-        if (receiverSocketId) {
-          io.to(receiverSocketId).emit("receive_message", message);
-          
-          // Auto-mark delivered
+        // 2. Deliver to ALL receiver's sessions
+        io.to(receiverId).emit("receive_message", message);
+        
+        // Auto-mark delivered (if we want to assume delivery if at least one socket exists, 
+        // socket.io handles buffering if we use rooms, but for now let's check if anyone is in the room)
+        const sockets = await io.in(receiverId).fetchSockets();
+        if (sockets.length > 0) {
           await prisma.message.update({
             where: { id: message.id },
             data: { status: "DELIVERED" },
           });
-          socket.emit("message_delivered", { messageId: message.id });
+          io.to(userId).emit("message_delivered", { messageId: message.id });
         }
       } catch (error) {
         console.error("Socket send_message error:", error);
@@ -82,10 +88,7 @@ export function setupSocketHandlers(io: SocketIOServer) {
     });
 
     socket.on("typing", ({ conversationId, receiverId }) => {
-      const receiverSocketId = userSockets.get(receiverId);
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("typing", { conversationId, userId });
-      }
+      io.to(receiverId).emit("typing", { conversationId, userId });
     });
 
     socket.on("mark_seen", async ({ messageId, conversationId, senderId }) => {
@@ -95,13 +98,29 @@ export function setupSocketHandlers(io: SocketIOServer) {
            data: { status: "SEEN" }
          });
          
-         const senderSocketId = userSockets.get(senderId);
-         if (senderSocketId) {
-            io.to(senderSocketId).emit("message_seen", { messageId, conversationId });
-         }
+         io.to(senderId).emit("message_seen", { messageId, conversationId });
        } catch (error) {
          console.error("Mark seen error", error);
        }
+    });
+
+    socket.on("mark_all_seen", async ({ conversationId, senderId }) => {
+      try {
+        console.log(`Marking all messages as SEEN for conversation ${conversationId} sent by ${senderId}`);
+        await prisma.message.updateMany({
+          where: {
+            conversationId,
+            senderId,
+            status: { not: "SEEN" }
+          },
+          data: { status: "SEEN" }
+        });
+
+        console.log(`Notifying sender ${senderId} in room ${senderId}`);
+        io.to(senderId).emit("conversation_seen", { conversationId });
+      } catch (error) {
+        console.error("Mark all seen error", error);
+      }
     });
 
     socket.on("edit_message", async ({ messageId, newContent, conversationId, receiverId }) => {
@@ -116,9 +135,8 @@ export function setupSocketHandlers(io: SocketIOServer) {
           }
         });
         
-        socket.emit("message_edited", message);
-        const receiverSocketId = userSockets.get(receiverId);
-        if (receiverSocketId) io.to(receiverSocketId).emit("message_edited", message);
+        io.to(userId).emit("message_edited", message);
+        io.to(receiverId).emit("message_edited", message);
       } catch (error) {
         console.error("Edit message error", error);
       }
@@ -136,9 +154,8 @@ export function setupSocketHandlers(io: SocketIOServer) {
           }
         });
         
-        socket.emit("message_deleted", message);
-        const receiverSocketId = userSockets.get(receiverId);
-        if (receiverSocketId) io.to(receiverSocketId).emit("message_deleted", message);
+        io.to(userId).emit("message_deleted", message);
+        io.to(receiverId).emit("message_deleted", message);
       } catch (error) {
         console.error("Delete message error", error);
       }
@@ -155,9 +172,8 @@ export function setupSocketHandlers(io: SocketIOServer) {
           if (existing.emoji === emoji) {
             // Remove reaction if same emoji toggled
             await prisma.reaction.delete({ where: { id: existing.id } });
-            socket.emit("reaction_removed", { messageId, reactionId: existing.id });
-            const receiverSocketId = userSockets.get(receiverId);
-            if (receiverSocketId) io.to(receiverSocketId).emit("reaction_removed", { messageId, reactionId: existing.id });
+            io.to(userId).emit("reaction_removed", { messageId, reactionId: existing.id });
+            io.to(receiverId).emit("reaction_removed", { messageId, reactionId: existing.id });
             return;
           } else {
             // Update to new emoji
@@ -175,25 +191,33 @@ export function setupSocketHandlers(io: SocketIOServer) {
           });
         }
         
-        socket.emit("reaction_added", { messageId, reaction });
-        const receiverSocketId = userSockets.get(receiverId);
-        if (receiverSocketId) io.to(receiverSocketId).emit("reaction_added", { messageId, reaction });
+        io.to(userId).emit("reaction_added", { messageId, reaction });
+        io.to(receiverId).emit("reaction_added", { messageId, reaction });
       } catch (error) {
         console.error("Add reaction error", error);
       }
     });
 
     socket.on("disconnect", async () => {
-      userSockets.delete(userId);
-      console.log(`User disconnected: ${userId}`);
+      console.log(`User disconnected: ${userId} (session)`);
       
-      // Update db status to offline
-      await prisma.user.update({
-        where: { id: userId },
-        data: { status: "OFFLINE", lastSeen: new Date() }
-      });
-
-      socket.broadcast.emit("user_status", { userId, status: "OFFLINE", lastSeen: new Date() });
+      const sockets = await io.in(userId).fetchSockets();
+      if (sockets.length === 0) {
+        // Only mark offline if ALL sessions are gone
+        try {
+          await prisma.user.update({
+            where: { id: userId },
+            data: { status: "OFFLINE", lastSeen: new Date() }
+          });
+          socket.broadcast.emit("user_status", { userId, status: "OFFLINE", lastSeen: new Date() });
+        } catch (err: any) {
+          if (err.code === 'P2025') {
+            console.warn(`User ${userId} disconnected but was not found in database.`);
+          } else {
+            console.error("Error setting offline status", err);
+          }
+        }
+      }
     });
   });
 
@@ -224,12 +248,9 @@ export function setupSocketHandlers(io: SocketIOServer) {
 
         const updatedMsg = { ...msg, scheduledAt: null };
 
-        // Distribute to all participants
+        // Distribute to all participants via rooms
         for (const p of msg.conversation.participants) {
-          const sId = userSockets.get(p.id);
-          if (sId) {
-            io.to(sId).emit("receive_message", updatedMsg);
-          }
+          io.to(p.id).emit("receive_message", updatedMsg);
         }
       }
 
@@ -253,12 +274,9 @@ export function setupSocketHandlers(io: SocketIOServer) {
           }
         });
 
-        // Distribute deletion
+        // Distribute deletion via rooms
         for (const p of msg.conversation.participants) {
-          const sId = userSockets.get(p.id);
-          if (sId) {
-            io.to(sId).emit("message_deleted", deletedMsg);
-          }
+          io.to(p.id).emit("message_deleted", deletedMsg);
         }
       }
 
