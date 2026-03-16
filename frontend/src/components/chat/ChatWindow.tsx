@@ -531,7 +531,7 @@ export default function ChatWindow({
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative bg-gradient-to-br from-[var(--color-bg)] to-[var(--color-sidebar)]">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-5 md:p-6 md:pt-7 border-b border-[var(--color-glass-border)] bg-[var(--color-glass-bg)] backdrop-blur-xl shadow-sm z-20 sticky top-0 md:m-3 rounded-none md:rounded-[2.5rem]">
+      <div className="flex items-center justify-between p-4 pt-10 md:p-6 md:pt-12 border-b border-[var(--color-glass-border)] bg-[var(--color-glass-bg)] backdrop-blur-xl shadow-sm z-20 sticky top-0">
         <div className="flex items-center space-x-2 md:space-x-3">
           {onBack && (
             <button 
@@ -805,7 +805,7 @@ export default function ChatWindow({
       )}
 
       {/* Input Area */}
-      <div className="p-3 md:p-4 md:m-3 md:mb-5 bg-[var(--color-glass-bg)] backdrop-blur-2xl border border-[var(--color-glass-border)] flex flex-col rounded-none md:rounded-[2.5rem] shadow-xl relative z-30">
+      <div className="p-3 md:p-4 bg-[var(--color-glass-bg)] backdrop-blur-2xl border-t border-[var(--color-glass-border)] flex flex-col relative z-30">
         {(replyingTo || editingMessage) && (
           <div className="flex items-center justify-between bg-[var(--color-bg)]/80 backdrop-blur-md border border-[var(--color-glass-border)] px-4 py-3 rounded-2xl mb-2 shadow-sm z-0">
             <div className="text-sm truncate opacity-80">
