@@ -14,12 +14,12 @@ router.post("/get-or-create", authenticateToken, async (req: AuthRequest, res) =
       return res.status(400).json({ error: "targetUserId is required" });
     }
 
-    // Check if conversation exists
     const existingConv = await prisma.conversation.findFirst({
       where: {
         AND: [
           { participants: { some: { id: currentUserId } } },
           { participants: { some: { id: targetUserId } } },
+          { participants: { every: { id: { in: [currentUserId, targetUserId] } } } }
         ],
       },
       include: {

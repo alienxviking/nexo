@@ -25,6 +25,7 @@ export default function OnlineUsersPanel({
   const { socket } = useSocket();
   const [users, setUsers] = useState<User[]>([]);
   const [filter, setFilter] = useState("");
+  const [isStarting, setIsStarting] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -56,6 +57,8 @@ export default function OnlineUsersPanel({
   };
 
   const startConversation = async (targetUser: User) => {
+    if (isStarting) return;
+    setIsStarting(true);
     try {
       const res = await fetch(`${API_URL}/api/conversations/get-or-create`, {
         method: "POST",
@@ -69,6 +72,8 @@ export default function OnlineUsersPanel({
       onSelectUser(targetUser, conv.id);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsStarting(false);
     }
   };
 
@@ -105,7 +110,7 @@ export default function OnlineUsersPanel({
               <div
                 key={u.id}
                 onClick={() => startConversation(u)}
-                className="flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-[2rem] group"
+                className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-[2rem] group ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="relative shrink-0">
                   <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shadow-sm group-hover:scale-105 transition-transform text-lg" style={{ background: getAvatarGradient(u.name) }}>
@@ -133,7 +138,7 @@ export default function OnlineUsersPanel({
               <div
                 key={u.id}
                 onClick={() => startConversation(u)}
-                className="flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-[2rem] group opacity-60 hover:opacity-100"
+                className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-[2rem] group opacity-60 hover:opacity-100 ${isStarting ? 'opacity-30 cursor-not-allowed' : ''}`}
               >
                 <div className="relative shrink-0">
                   <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shadow-sm group-hover:scale-105 transition-transform text-lg" style={{ background: getAvatarGradient(u.name) }}>

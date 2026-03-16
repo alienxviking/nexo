@@ -42,6 +42,7 @@ export default function Sidebar({
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [isStarting, setIsStarting] = useState(false);
   const toastTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
@@ -175,6 +176,8 @@ export default function Sidebar({
   };
 
   const startConversation = async (targetUser: User) => {
+    if (isStarting) return;
+    setIsStarting(true);
     try {
       const res = await fetch(`${API_URL}/api/conversations/get-or-create`, {
         method: "POST",
@@ -192,6 +195,8 @@ export default function Sidebar({
       fetchConversations();
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsStarting(false);
     }
   };
 
@@ -246,7 +251,7 @@ export default function Sidebar({
               <div 
                 key={u.id}
                 onClick={() => startConversation(u)}
-                className="flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-2xl group"
+                className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-2xl group ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform text-lg" style={{ background: getAvatarGradient(u.name) }}>
                   {u.name.charAt(0).toUpperCase()}
