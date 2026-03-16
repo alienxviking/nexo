@@ -1,0 +1,301 @@
+@import "tailwindcss";
+
+/* --- THEME 1: Strawberry Milk (Light) --- */
+:root, [data-theme="strawberry"] {
+  --background: #FFF5F7;
+  --foreground: #7A2848;
+
+  --bg: #FFF5F7;
+  --chat-bg: #FFFFFF;
+  --sidebar: #FFF0F4;
+  --primary: #C0436E;
+  --primary-hover: #D84B7C;
+  --sent-msg: #C0436E;
+  --recv-msg: #FFE5ED;
+  --text-main: #7A2848;
+  --text-secondary: #E08AAF;
+  --border: #FBBDD0;
+  --glass-bg: rgba(255, 245, 247, 0.7);
+  --glass-border: rgba(251, 189, 208, 0.5);
+  
+  --input-bg: #FFFFFF;
+}
+
+/* --- THEME 2: Lavender Dream (Light) --- */
+[data-theme="lavender"] {
+  --background: #F4F2FD;
+  --foreground: #2E257A;
+
+  --bg: #F4F2FD;
+  --chat-bg: #FFFFFF;
+  --sidebar: #EBE8F9;
+  --primary: #4B3FA0;
+  --primary-hover: #5A4EBB;
+  --sent-msg: #4B3FA0;
+  --recv-msg: #E8E4FA;
+  --text-main: #2E257A;
+  --text-secondary: #9B93D4;
+  --border: #C5BCEF;
+  --glass-bg: rgba(244, 242, 253, 0.7);
+  --glass-border: rgba(197, 188, 239, 0.5);
+  
+  --input-bg: #FFFFFF;
+}
+
+/* --- THEME 3: Matcha Latte (Light) --- */
+[data-theme="matcha"] {
+  --background: #F3F8ED;
+  --foreground: #27500A;
+
+  --bg: #F3F8ED;
+  --chat-bg: #FFFFFF;
+  --sidebar: #E9F2E2;
+  --primary: #3B6D11;
+  --primary-hover: #488415;
+  --sent-msg: #3B6D11;
+  --recv-msg: #DFF0C8;
+  --text-main: #27500A;
+  --text-secondary: #7BAD4B;
+  --border: #AECE8A;
+  --glass-bg: rgba(243, 248, 237, 0.7);
+  --glass-border: rgba(174, 206, 138, 0.5);
+  
+  --input-bg: #FFFFFF;
+}
+
+/* --- THEME 4: Peach Sorbet (Light) --- */
+[data-theme="peach"] {
+  --background: #FFF7F2;
+  --foreground: #712B13;
+
+  --bg: #FFF7F2;
+  --chat-bg: #FFFFFF;
+  --sidebar: #FFEEE6;
+  --primary: #993C1D;
+  --primary-hover: #B44722;
+  --sent-msg: #993C1D;
+  --recv-msg: #FAECE7;
+  --text-main: #712B13;
+  --text-secondary: #D98870;
+  --border: #F5C4B3;
+  --glass-bg: rgba(255, 247, 242, 0.7);
+  --glass-border: rgba(245, 196, 179, 0.5);
+  
+  --input-bg: #FFFFFF;
+}
+
+/* --- THEME 5: Midnight Rose (Dark) --- */
+[data-theme="midnight-rose"] {
+  --background: #1E1018;
+  --foreground: #F4C0D1;
+
+  --bg: #1E1018;
+  --chat-bg: #150A10;
+  --sidebar: #170C12;
+  --primary: #C0436E;
+  --primary-hover: #D84B7C;
+  --sent-msg: #C0436E;
+  --recv-msg: #2E1525;
+  --text-main: #F4C0D1;
+  --text-secondary: #8B4C6A;
+  --border: #5C2240;
+  --glass-bg: rgba(30, 16, 24, 0.7);
+  --glass-border: rgba(92, 34, 64, 0.5);
+  
+  --input-bg: #2E1525;
+}
+
+/* --- THEME 6: Galaxy Dust (Dark) --- */
+[data-theme="galaxy-dust"] {
+  --background: #100E1E;
+  --foreground: #CECBF6;
+
+  --bg: #100E1E;
+  --chat-bg: #0A0914;
+  --sidebar: #0C0B18;
+  --primary: #7F77DD;
+  --primary-hover: #968FFA;
+  --sent-msg: #7F77DD;
+  --recv-msg: #1C1830;
+  --text-main: #CECBF6;
+  --text-secondary: #534AB7;
+  --border: #3C3489;
+  --glass-bg: rgba(16, 14, 30, 0.7);
+  --glass-border: rgba(60, 52, 137, 0.5);
+  
+  --input-bg: #1C1830;
+}
+
+/* --- THEME 7: Forest Night (Dark) --- */
+[data-theme="forest-night"] {
+  --background: #0B1409;
+  --foreground: #C0DD97;
+
+  --bg: #0B1409;
+  --chat-bg: #060A04;
+  --sidebar: #080E06;
+  --primary: #639922;
+  --primary-hover: #76B429;
+  --sent-msg: #639922;
+  --recv-msg: #141F0E;
+  --text-main: #C0DD97;
+  --text-secondary: #3B6D11;
+  --border: #27500A;
+  --glass-bg: rgba(11, 20, 9, 0.7);
+  --glass-border: rgba(39, 80, 10, 0.5);
+  
+  --input-bg: #141F0E;
+}
+
+/* --- THEME 8: Ember Glow (Dark) --- */
+[data-theme="ember-glow"] {
+  --background: #180D08;
+  --foreground: #F5C4B3;
+
+  --bg: #180D08;
+  --chat-bg: #0F0805;
+  --sidebar: #130A06;
+  --primary: #D85A30;
+  --primary-hover: #F06536;
+  --sent-msg: #D85A30;
+  --recv-msg: #261009;
+  --text-main: #F5C4B3;
+  --text-secondary: #993C1D;
+  --border: #712B13;
+  --glass-bg: rgba(24, 13, 8, 0.7);
+  --glass-border: rgba(113, 43, 19, 0.5);
+  
+  --input-bg: #261009;
+}
+
+/* --- THEME 9: Clean Light (Light) --- */
+[data-theme="clean-light"] {
+  --background: #FFFFFF;
+  --foreground: #111111;
+
+  --bg: #FFFFFF;
+  --chat-bg: #FAFAFA;
+  --sidebar: #F7F7F7;
+  --primary: #1A73E8;
+  --primary-hover: #2684FA;
+  --sent-msg: #1A73E8;
+  --recv-msg: #F2F2F2;
+  --text-main: #111111;
+  --text-secondary: #AAAAAA;
+  --border: #E0E0E0;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(224, 224, 224, 0.5);
+  
+  --input-bg: #F7F7F7;
+}
+
+/* --- THEME 10: Clean Dark (Dark) --- */
+[data-theme="clean-dark"] {
+  --background: #141414;
+  --foreground: #E8E8E8;
+
+  --bg: #141414;
+  --chat-bg: #0F0F0F;
+  --sidebar: #1A1A1A;
+  --primary: #3B82F6;
+  --primary-hover: #60A5FA;
+  --sent-msg: #3B82F6;
+  --recv-msg: #222222;
+  --text-main: #E8E8E8;
+  --text-secondary: #555555;
+  --border: #2E2E2E;
+  --glass-bg: rgba(20, 20, 20, 0.7);
+  --glass-border: rgba(46, 46, 46, 0.5);
+  
+  --input-bg: #1E1E1E;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-bg: var(--bg);
+  --color-chat-bg: var(--chat-bg);
+  --color-sidebar: var(--sidebar);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-sent-msg: var(--sent-msg);
+  --color-recv-msg: var(--recv-msg);
+  --color-text-main: var(--text-main);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-glass-bg: var(--glass-bg);
+  --color-glass-border: var(--glass-border);
+  --color-input-bg: var(--input-bg);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+/* Themed Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+  opacity: 0.4;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
+}
+
+/* Blob animation for login page */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+.animate-blob {
+  animation: blob 7s infinite;
+}
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%) rotate(6deg);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0) rotate(6deg);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+@layer utilities {
+  .animate-in {
+    animation-duration: 0.5s;
+    animation-fill-mode: forwards;
+  }
+  .fade-in {
+    animation-name: fade-in;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

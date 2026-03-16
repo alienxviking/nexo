@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+
+model User {
+  id               String         @id @default(uuid())
+  email            String         @unique
+  name             String
+  passwordHash     String
+  avatarUrl        String?
+  status           UserStatus     @default(OFFLINE)
+  lastSeen         DateTime       @default(now())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  messagesSent     Message[]      @relation("Sender")
+  conversations    Conversation[] @relation("ConversationParticipants")
+  reactions        Reaction[]
+}
+
+enum UserStatus {
+  ONLINE
+  OFFLINE
+}
+
+model Conversation {
+  id               String         @id @default(uuid())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  participants     User[]         @relation("ConversationParticipants")
+  messages         Message[]
+}
+
+model Message {
+  id               String         @id @default(uuid())
+  content          String?
+  type             MessageType    @default(TEXT)
+  status           MessageStatus  @default(SENT)
+  fileUrl          String?
+  scheduledAt      DateTime?
+  selfDestructAt   DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  senderId         String
+  sender           User           @relation("Sender", fields: [senderId], references: [id])
+
+  conversationId   String
+  conversation     Conversation   @relation(fields: [conversationId], references: [id])
+
+  isEdited         Boolean        @default(false)
+  isDeleted        Boolean        @default(false)
+
+  replyToId        String?
+  replyTo          Message?       @relation("ReplyTo", fields: [replyToId], references: [id])
+  replies          Message[]      @relation("ReplyTo")
+
+  reactions        Reaction[]
+}
+
+model Reaction {
+  id               String         @id @default(uuid())
+  emoji            String
+  createdAt        DateTime       @default(now())
+
+  messageId        String
+  message          Message        @relation(fields: [messageId], references: [id])
+
+  userId           String
+  user             User           @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId, emoji])
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  VOICE
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  SEEN
+}
