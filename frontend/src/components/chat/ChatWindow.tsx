@@ -1,27 +1,221 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, memo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import EmojiPicker, { Theme, Emoji, EmojiStyle } from "emoji-picker-react";
+import { getAvatarGradient } from "@/lib/avatarGradients";
+import VoicePlayer from "./VoicePlayer";
+import { API_URL } from "@/lib/config";
 
 const isOnlyEmoji = (str: string) => {
-  // Regex for emojis only (including multiple emojis and spaces)
-  const emojiRegex = /^(\p{Extended_Pictographic}|\s)+$/u;
+  // Regex for emojis only (including multiple emojis, symbols, and spaces)
+  const emojiRegex = /^(\p{Extended_Pictographic}|\p{Emoji_Presentation}|\p{Emoji_Component}|\s)+$/u;
   return emojiRegex.test(str.trim());
 };
 
 const getEmojiUnified = (emoji: string) => {
   return Array.from(emoji)
     .map(char => char.codePointAt(0)?.toString(16).toLowerCase())
-    .filter(Boolean)
     .join("-");
 };
-import { getAvatarGradient } from "@/lib/avatarGradients";
-import VoicePlayer from "./VoicePlayer";
-import { API_URL } from "@/lib/config";
+
+const SafeEmoji = ({ char, size }: { char: string; size: number }) => {
+  const [error, setError] = useState(false);
+  const unified = getEmojiUnified(char);
+  
+  return error ? (
+    <span 
+      className="flex items-center justify-center select-none leading-none inline-flex" 
+      style={{ fontSize: `${size * 0.8}px`, width: `${size}px`, height: `${size}px` }}
+    >
+      {char}
+    </span>
+  ) : (
+    <img 
+      src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/${unified}.png`}
+      alt={char}
+      className="object-contain select-none"
+      style={{ width: `${size}px`, height: `${size}px` }}
+      onError={() => {
+        console.warn(`Emoji asset failed to load for: ${char} (${unified})`);
+        setError(true);
+      }}
+      loading="lazy"
+    />
+  );
+};
+
+const MessageItem = memo(({ 
+  msg, 
+  currentUser, 
+  currentActiveUser, 
+  index, 
+  messages, 
+  activeMenu, 
+  addReaction, 
+  startReply, 
+  startEdit, 
+  setMessageToDelete, 
+  scrollToMessage,
+  highlightedMessageId
+}: { 
+  msg: Message; 
+  currentUser: any; 
+  currentActiveUser: User; 
+  index: number; 
+  messages: Message[]; 
+  activeMenu: string | null;
+  addReaction: (id: string, emoji: string) => void;
+  startReply: (msg: Message) => void;
+  startEdit: (msg: Message) => void;
+  setMessageToDelete: (id: string) => void;
+  scrollToMessage: (id: string) => void;
+  highlightedMessageId: string | null;
+}) => {
+  const isMe = msg.senderId === currentUser?.id;
+  const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
+  const showTime = index === 0 || new Date(msg.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 300000; // 5 mins
+  const isHighlighted = highlightedMessageId === msg.id;
+
+  return (
+    <div key={msg.id} id={`msg-${msg.id}`} className={`flex flex-col ${isMe ? "items-end" : "items-start"} relative group transition-colors duration-500 ${isHighlighted ? "bg-[var(--color-primary)]/5 rounded-xl -mx-2 px-2" : ""}`}>
+      {showTime && (
+        <div className="flex items-center gap-3 my-4 self-center w-full max-w-xs">
+          <div className="flex-1 h-px bg-[var(--color-border)]/50"></div>
+          <span className="text-[10px] font-semibold text-[var(--color-text-secondary)] bg-[var(--color-glass-bg)] backdrop-blur-sm px-4 py-1.5 rounded-full border border-[var(--color-glass-border)] shadow-sm whitespace-nowrap">
+            {(() => {
+              const d = new Date(msg.createdAt);
+              if (isToday(d)) return `Today, ${format(d, "h:mm a")}`;
+              if (isYesterday(d)) return `Yesterday, ${format(d, "h:mm a")}`;
+              return format(d, "MMM d, h:mm a");
+            })()}
+          </span>
+          <div className="flex-1 h-px bg-[var(--color-border)]/50"></div>
+        </div>
+      )}
+      <div className="flex items-center space-x-2">
+        {isMe && (
+          <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
+            <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+              <SafeEmoji char="👍" size={20} />
+            </button>
+            <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+              <SafeEmoji char="❤️" size={20} />
+            </button>
+            <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+              <SafeEmoji char="😂" size={20} />
+            </button>
+            <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
+            {msg.content !== "This message was deleted" && !msg.isDeleted && (
+              <>
+                <button onClick={() => startEdit(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Edit</button>
+                <button onClick={() => setMessageToDelete(msg.id)} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs font-semibold px-1">Delete</button>
+              </>
+            )}
+          </div>
+        )}
+        
+        <div
+          className={`w-fit max-w-[85%] md:max-w-[70%] ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3 rounded-[1.25rem] md:rounded-[1.5rem]"} ${
+            msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
+            isEmojiOnly ? "bg-transparent shadow-none" :
+            isMe
+              ? "bg-[var(--color-primary)] text-[var(--color-background)] shadow-[0_2px_10px_-4px_var(--color-primary)] bubble-tail-me"
+              : "bg-[var(--color-glass-bg)] backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] shadow-sm bubble-tail-other"
+          }`}
+        >
+          {msg.replyTo && !msg.isDeleted && (
+            <div
+              onClick={() => scrollToMessage(msg.replyTo!.id)}
+              className={`text-xs p-2 rounded-lg mb-2 opacity-80 border-l-2 cursor-pointer hover:opacity-100 transition-opacity ${isMe ? "bg-white/20 border-white/40" : "bg-[var(--color-border)] border-[var(--color-primary)]"} truncate`}
+            >
+              <span className="font-semibold block">{msg.replyTo.sender.id === currentUser?.id ? 'You' : currentActiveUser.name}</span>
+              {msg.replyTo.content}
+            </div>
+          )}
+
+          {!msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl && (
+            <img src={`${API_URL}${msg.fileUrl}`} alt="Sent image" className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain" />
+          )}
+          
+          {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
+            <a href={`${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className={`group flex items-center space-x-3 p-3 rounded-2xl mb-2 backdrop-blur-md border transition-all hover:scale-[1.02] ${isMe ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-[var(--color-glass-bg)] border-[var(--color-glass-border)] text-[var(--color-text-main)] shadow-sm hover:bg-[var(--color-bg)]/50'} no-underline`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20' : 'bg-[var(--color-primary)]/10'}`}>
+                <FileIcon className={`w-5 h-5 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                 <span className="text-sm font-semibold truncate max-w-[150px] leading-tight">{msg.content}</span>
+                 <span className={`text-[10px] mt-0.5 ${isMe ? 'text-white/70' : 'text-[var(--color-text-secondary)]'}`}>Click to download</span>
+              </div>
+              <Download className={`w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity shrink-0 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
+            </a>
+          )}
+
+          {!msg.isDeleted && msg.type === "VOICE" && msg.fileUrl && (
+            <div className="mb-1">
+              <VoicePlayer src={`${API_URL}${msg.fileUrl}`} isMe={isMe} />
+            </div>
+          )}
+
+          {(msg.type === "TEXT" || msg.isDeleted) && (
+            <div className={`leading-relaxed break-words ${isEmojiOnly ? "flex flex-wrap gap-2 py-3 justify-center min-h-[4rem]" : "text-[15px]"}`}>
+              {isEmojiOnly ? (
+                msg.content.match(/\p{Extended_Pictographic}\uFE0F?(?:\u200d\p{Extended_Pictographic}\uFE0F?)*|\p{Emoji_Presentation}|\p{Emoji_Component}/gu)?.map((char, i) => (
+                   <SafeEmoji key={i} char={char} size={64} />
+                ))
+              ) : (
+                msg.content
+              )}
+            </div>
+          )}
+          
+          <div className={`flex items-center justify-end mt-1 space-x-1 ${msg.isDeleted ? "text-[var(--color-text-secondary)]" : (isEmojiOnly || !isMe) ? "text-[var(--color-text-secondary)]" : "text-blue-100"}`}>
+            {msg.isEdited && !msg.isDeleted && <span className="text-[10px] italic mr-1">edited</span>}
+            <span className="text-[10px] opacity-80">
+              {format(new Date(msg.createdAt), "h:mm a")}
+            </span>
+            {isMe && !msg.isDeleted && (
+              <span className="text-xs ml-1 flex items-center font-bold">
+                {msg.status === "SENT" && <Check className="w-3.5 h-3.5 opacity-60" />}
+                {msg.status === "DELIVERED" && <CheckCheck className="w-3.5 h-3.5 opacity-60" />}
+                {msg.status === "SEEN" && <CheckCheck className="w-3.5 h-3.5 text-cyan-300 opacity-100 drop-shadow-[0_0_2px_rgba(103,232,249,0.8)]" />}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {!isMe && (
+           <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
+              <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="👍" size={20} />
+              </button>
+              <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="❤️" size={20} />
+              </button>
+              <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="😂" size={20} />
+              </button>
+              <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
+           </div>
+        )}
+      </div>
+      
+      {msg.reactions && msg.reactions.length > 0 && !msg.isDeleted && (
+        <div className={`flex -mt-2.5 z-10 animate-in fade-in zoom-in duration-300 ${isMe ? "mr-4" : "ml-4"}`}>
+          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full px-1.5 py-0.5 shadow-sm text-xs flex space-x-1 items-center">
+            {Array.from(new Set(msg.reactions.map(r => r.emoji))).map(emoji => (
+               <Emoji key={emoji} unified={getEmojiUnified(emoji)} size={14} emojiStyle={EmojiStyle.APPLE} />
+            ))}
+            <span className="text-[10px] text-[var(--color-text-secondary)] font-semibold">{msg.reactions.length}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+});
 
 interface User {
   id: string;
@@ -51,6 +245,340 @@ interface Message {
   fileUrl?: string;
 }
 
+const ChatInput = memo(({ 
+  socket, 
+  conversationId, 
+  currentUser, 
+  currentActiveUser, 
+  token,
+  replyingTo, 
+  setReplyingTo,
+  editingMessage,
+  setEditingMessage,
+  setMessages,
+  scrollToBottom,
+}: {
+  socket: any;
+  conversationId: string;
+  currentUser: any;
+  currentActiveUser: User;
+  token: string | null;
+  replyingTo: Message | null;
+  setReplyingTo: (msg: Message | null) => void;
+  editingMessage: Message | null;
+  setEditingMessage: (msg: Message | null) => void;
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  scrollToBottom: () => void;
+}) => {
+  const [newMessage, setNewMessage] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [selfDestructTimer, setSelfDestructTimer] = useState<number | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const lastTypingEmitRef = useRef<number>(0);
+  const messageInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+
+  useEffect(() => {
+    if (editingMessage) {
+      setNewMessage(editingMessage.content);
+      setTimeout(() => {
+        if (messageInputRef.current) {
+          messageInputRef.current.focus();
+          messageInputRef.current.setSelectionRange(editingMessage.content.length, editingMessage.content.length);
+        }
+      }, 50);
+    } else if (replyingTo) {
+      setTimeout(() => messageInputRef.current?.focus(), 50);
+    }
+  }, [editingMessage, replyingTo]);
+
+  const uploadFile = async (file: File): Promise<string | null> => {
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const res = await fetch(`${API_URL}/api/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      setUploading(false);
+      return data.url;
+    } catch (err) {
+      console.error("Upload error", err);
+      setUploading(false);
+      return null;
+    }
+  };
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !socket || !currentUser) return;
+
+    const content = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
+    const now = new Date().toISOString();
+
+    if (editingMessage) {
+      setMessages(prev => prev.map(m => m.id === editingMessage.id ? { ...m, content, isEdited: true } : m));
+      socket.emit("edit_message", {
+        messageId: editingMessage.id,
+        newContent: content,
+        conversationId,
+        receiverId: currentActiveUser.id,
+      });
+      setEditingMessage(null);
+    } else {
+      let scheduledAtDate = null;
+      if (scheduleTime) scheduledAtDate = new Date(scheduleTime).toISOString();
+      
+      let selfDestructAtDate = null;
+      if (selfDestructTimer) selfDestructAtDate = new Date(Date.now() + selfDestructTimer * 1000).toISOString();
+
+      if (!scheduledAtDate) {
+        const optimisticMsg: Message = {
+          id: tempId,
+          content,
+          senderId: currentUser.id,
+          conversationId,
+          status: "SENT",
+          createdAt: now,
+          type: "TEXT",
+          replyTo: replyingTo ? {
+            id: replyingTo.id,
+            content: replyingTo.content,
+            sender: { id: replyingTo.senderId, name: replyingTo.senderId === currentUser.id ? currentUser.name : currentActiveUser.name }
+          } : null,
+        };
+        setMessages(prev => [...prev, optimisticMsg]);
+        setTimeout(() => scrollToBottom(), 50);
+      }
+
+      socket.emit("send_message", {
+        conversationId,
+        receiverId: currentActiveUser.id,
+        content,
+        replyToId: replyingTo?.id || null,
+        scheduledAt: scheduledAtDate,
+        selfDestructAt: selfDestructAtDate,
+        tempId,
+      });
+    }
+
+    setNewMessage("");
+    setReplyingTo(null);
+    setScheduleTime("");
+    setSelfDestructTimer(null);
+    setShowEmojiPicker(false);
+    setShowAttachMenu(false);
+  };
+
+  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    if (socket) {
+      const now = Date.now();
+      if (now - lastTypingEmitRef.current > 2000) {
+        socket.emit("typing", { conversationId, receiverId: currentActiveUser.id });
+        lastTypingEmitRef.current = now;
+      }
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, msgType: "IMAGE" | "FILE") => {
+    const file = e.target.files?.[0];
+    if (!file || !socket) return;
+    setShowAttachMenu(false);
+    const url = await uploadFile(file);
+    if (!url) return;
+    socket.emit("send_message", {
+      conversationId,
+      receiverId: currentActiveUser.id,
+      content: file.name,
+      fileUrl: url,
+      type: msgType,
+      replyToId: replyingTo?.id || null,
+    });
+    setReplyingTo(null);
+  };
+
+  const toggleRecording = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        chunksRef.current = [];
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const file = new File([blob], "voice_message.webm", { type: 'audio/webm' });
+          const url = await uploadFile(file);
+          if (url && socket) {
+            socket.emit("send_message", {
+              conversationId, receiverId: currentActiveUser.id, content: "Voice Message",
+              fileUrl: url, type: "VOICE", replyToId: replyingTo?.id || null,
+            });
+          }
+          stream.getTracks().forEach(track => track.stop());
+        };
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (err) { console.error("Microphone error", err); }
+    }
+  };
+
+  return (
+    <div className="bg-[var(--color-glass-bg)] backdrop-blur-xl border-t border-[var(--color-glass-border)] p-4 md:p-6 z-20">
+      {replyingTo && (
+        <div className="flex items-center justify-between bg-[var(--color-chat-bg)]/80 backdrop-blur-md rounded-2xl p-4 mb-4 border border-[var(--color-border)] animate-in slide-in-from-bottom-2 duration-300 shadow-sm overflow-hidden">
+          <div className="flex items-center space-x-3 overflow-hidden">
+            <div className="w-1 h-8 bg-[var(--color-primary)] rounded-full shrink-0"></div>
+            <div className="overflow-hidden">
+              <span className="text-xs font-bold text-[var(--color-primary)]">Replying to {replyingTo.senderId === currentUser?.id ? 'you' : currentActiveUser.name}</span>
+              <p className="text-sm text-[var(--color-text-secondary)] truncate leading-relaxed">{replyingTo.content}</p>
+            </div>
+          </div>
+          <button onClick={() => setReplyingTo(null)} className="p-1.5 hover:bg-[var(--color-border)] rounded-full text-[var(--color-text-secondary)] transition-colors"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      {editingMessage && (
+        <div className="flex items-center justify-between bg-orange-50/80 backdrop-blur-md rounded-2xl p-4 mb-4 border border-orange-200 animate-in slide-in-from-bottom-2 duration-300 shadow-sm overflow-hidden dark:bg-orange-950/20 dark:border-orange-900/30">
+          <div className="flex items-center space-x-3 overflow-hidden">
+            <div className="w-1 h-8 bg-orange-500 rounded-full shrink-0"></div>
+            <div className="overflow-hidden">
+              <span className="text-xs font-bold text-orange-600 dark:text-orange-400">Editing Message</span>
+              <p className="text-sm text-[var(--color-text-secondary)] truncate leading-relaxed">{editingMessage.content}</p>
+            </div>
+          </div>
+          <button onClick={() => setEditingMessage(null)} className="p-1.5 hover:bg-orange-100 rounded-full text-orange-600 transition-colors dark:hover:bg-orange-900/50"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      <form onSubmit={handleSend} className="relative flex flex-col space-y-3">
+        {showAttachMenu && (
+          <div className="absolute bottom-full left-0 mb-4 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 zoom-in-95 duration-200 z-50 min-w-[240px]">
+             <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full flex items-center space-x-3 px-6 py-3.5 hover:bg-[var(--color-chat-bg)] transition-colors">
+               <ImageIcon className="w-5 h-5 text-pink-500" />
+               <span className="text-sm font-medium text-[var(--color-text-main)]">Image</span>
+             </button>
+             <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full flex items-center space-x-3 px-6 py-3.5 hover:bg-[var(--color-chat-bg)] transition-colors border-t border-[var(--color-border)]">
+               <FileIcon className="w-5 h-5 text-indigo-500" />
+               <span className="text-sm font-medium text-[var(--color-text-main)]">Document</span>
+             </button>
+             
+             <div className="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg)]/50">
+               <div className="flex items-center space-x-3 mb-3">
+                 <Clock className="w-5 h-5 text-blue-500" />
+                 <span className="text-sm font-bold text-[var(--color-text-main)]">Scheduled Send</span>
+               </div>
+               <input 
+                 type="datetime-local" 
+                 value={scheduleTime} 
+                 onChange={e => setScheduleTime(e.target.value)} 
+                 className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-xs text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
+               />
+               {scheduleTime && (
+                 <button type="button" onClick={() => setScheduleTime("")} className="text-[10px] text-red-500 hover:underline mt-2 w-full text-right font-medium">
+                   Clear Schedule
+                 </button>
+               )}
+             </div>
+
+             <div className="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg)]/50">
+                <div className="flex items-center space-x-3 mb-3">
+                  <Bomb className={`w-5 h-5 ${selfDestructTimer ? 'text-orange-500 animate-pulse' : 'text-orange-400'}`} />
+                  <span className="text-sm font-bold text-[var(--color-text-main)]">Self-Destruct</span>
+                </div>
+                <select 
+                  value={selfDestructTimer || ""} 
+                  onChange={e => setSelfDestructTimer(e.target.value ? parseInt(e.target.value) : null)}
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-xs text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer"
+                >
+                  <option value="">Status: Off</option>
+                  <option value="5">5 Seconds</option>
+                  <option value="30">30 Seconds</option>
+                  <option value="3600">1 Hour</option>
+                  <option value="86400">1 Day</option>
+                </select>
+             </div>
+          </div>
+        )}
+
+        {showEmojiPicker && (
+          <div className="absolute bottom-full right-0 mb-4 z-50 animate-in slide-in-from-bottom-4 zoom-in-95 duration-200 shadow-2xl">
+            <EmojiPicker 
+              theme={Theme.AUTO} 
+              onEmojiClick={(emojiData) => setNewMessage(prev => prev + emojiData.emoji)}
+              lazyLoadEmojis={true}
+              emojiStyle={EmojiStyle.APPLE}
+            />
+          </div>
+        )}
+
+        <div className="flex items-end space-x-2 md:space-x-4">
+          <div className="flex items-center space-x-1 md:space-x-2 pb-1.5">
+            <button 
+              type="button" 
+              onClick={() => setShowAttachMenu(!showAttachMenu)} 
+              className={`p-2.5 rounded-full transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-chat-bg)] hover:text-[var(--color-primary)]'}`}
+            >
+              <Plus className={`w-6 h-6 transition-transform duration-200 ${showAttachMenu ? 'rotate-45' : ''}`} />
+            </button>
+          </div>
+          
+          <div className="flex-1 relative group">
+            <input
+              ref={messageInputRef}
+              type="text"
+              value={newMessage}
+              onChange={handleTyping}
+              placeholder={editingMessage ? "Edit message..." : "Type a message..."}
+              className="w-full py-3.5 md:py-4 pl-6 md:pl-8 pr-12 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-[1.5rem] md:rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-[var(--color-primary)] transition-all shadow-sm text-sm md:text-base text-[var(--color-text-main)]"
+            />
+            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${showEmojiPicker ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'}`}><Smile className="w-6 h-6" /></button>
+          </div>
+
+          <div className="flex items-center space-x-1 md:space-x-2 pb-1.5">
+            {newMessage.trim() || uploading ? (
+              <button 
+                type="submit" 
+                disabled={uploading}
+                className="p-3.5 md:p-4 bg-[var(--color-primary)] text-white rounded-full shadow-lg hover:shadow-[var(--color-primary)]/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+              >
+                {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Send className="w-5 h-5" />}
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                onClick={toggleRecording}
+                className={`p-3.5 md:p-4 rounded-full shadow-md transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-[var(--color-chat-bg)] text-[var(--color-text-secondary)] hover:text-red-500 hover:bg-red-50'}`}
+              >
+                {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+            )}
+          </div>
+        </div>
+
+
+        <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileSelect(e, "FILE")} />
+        <input type="file" ref={imageInputRef} accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e, "IMAGE")} />
+      </form>
+    </div>
+  );
+});
+
 export default function ChatWindow({
   activeUser,
   conversationId,
@@ -63,7 +591,6 @@ export default function ChatWindow({
   const { token, user: currentUser } = useAuth();
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [currentActiveUser, setCurrentActiveUser] = useState<User>(activeUser);
   
@@ -75,24 +602,11 @@ export default function ChatWindow({
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
   
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const messageInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
-
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Message[]>([]);
   
-  const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
-  
-  const [scheduleTime, setScheduleTime] = useState("");
-  const [selfDestructTimer, setSelfDestructTimer] = useState<number | null>(null); // in seconds
 
   // Smart scroll state
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -297,198 +811,6 @@ export default function ChatWindow({
     }
   };
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !socket || !currentUser) return;
-
-    const content = newMessage.trim();
-    const tempId = `temp-${Date.now()}`;
-    const now = new Date().toISOString();
-
-    if (editingMessage) {
-      // For editing, we update immediately locally too
-      setMessages(prev => prev.map(m => m.id === editingMessage.id ? { ...m, content, isEdited: true } : m));
-      
-      socket.emit("edit_message", {
-        messageId: editingMessage.id,
-        newContent: content,
-        conversationId,
-        receiverId: currentActiveUser.id,
-      });
-      setEditingMessage(null);
-    } else {
-      let scheduledAtDate = null;
-      if (scheduleTime) {
-        scheduledAtDate = new Date(scheduleTime).toISOString();
-      }
-      
-      let selfDestructAtDate = null;
-      if (selfDestructTimer) {
-        selfDestructAtDate = new Date(Date.now() + selfDestructTimer * 1000).toISOString();
-      }
-
-      // Optimistic message
-      if (!scheduledAtDate) {
-        const optimisticMsg: Message = {
-          id: tempId,
-          content,
-          senderId: currentUser.id,
-          conversationId,
-          status: "SENT",
-          createdAt: now,
-          type: "TEXT",
-          replyTo: replyingTo ? {
-            id: replyingTo.id,
-            content: replyingTo.content,
-            sender: { id: replyingTo.senderId, name: replyingTo.senderId === currentUser.id ? currentUser.name : currentActiveUser.name }
-          } : null,
-        };
-        setMessages(prev => [...prev, optimisticMsg]);
-        setTimeout(() => scrollToBottom(), 50);
-      }
-
-      socket.emit("send_message", {
-        conversationId,
-        receiverId: currentActiveUser.id,
-        content,
-        replyToId: replyingTo?.id || null,
-        scheduledAt: scheduledAtDate,
-        selfDestructAt: selfDestructAtDate,
-        tempId, // Pass tempId so server can echo it back
-      });
-    }
-
-    setNewMessage("");
-    setReplyingTo(null);
-    setScheduleTime("");
-    setSelfDestructTimer(null);
-    setShowEmojiPicker(false);
-    setShowAttachMenu(false);
-  };
-
-  const startEdit = (msg: Message) => {
-    setEditingMessage(msg);
-    setNewMessage(msg.content);
-    setReplyingTo(null);
-    setActiveMenu(null);
-    setTimeout(() => {
-      const input = messageInputRef.current;
-      if (input) {
-        input.focus();
-        input.setSelectionRange(msg.content.length, msg.content.length);
-      }
-    }, 50);
-  };
-
-  const startReply = (msg: Message) => {
-    setReplyingTo(msg);
-    setEditingMessage(null);
-    setActiveMenu(null);
-    setTimeout(() => messageInputRef.current?.focus(), 50);
-  };
-
-  const deleteMessage = () => {
-    if (!socket || !messageToDelete) return;
-    socket.emit("delete_message", {
-      messageId: messageToDelete,
-      conversationId,
-      receiverId: currentActiveUser.id
-    });
-    setMessageToDelete(null);
-    setActiveMenu(null);
-  };
-
-  const addReaction = (msgId: string, emoji: string) => {
-    if (!socket) return;
-    socket.emit("add_reaction", {
-      messageId: msgId,
-      emoji,
-      conversationId,
-      receiverId: currentActiveUser.id
-    });
-    setActiveMenu(null);
-  };
-
-  const uploadFile = async (file: File): Promise<string | null> => {
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    try {
-      const res = await fetch(`${API_URL}/api/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
-      const data = await res.json();
-      setUploading(false);
-      return data.url;
-    } catch (err) {
-      console.error("Upload error", err);
-      setUploading(false);
-      return null;
-    }
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, msgType: "IMAGE" | "FILE") => {
-    const file = e.target.files?.[0];
-    if (!file || !socket) return;
-    
-    setShowAttachMenu(false);
-    const url = await uploadFile(file);
-    if (!url) return;
-
-    socket.emit("send_message", {
-      conversationId,
-      receiverId: currentActiveUser.id,
-      content: file.name,
-      fileUrl: url,
-      type: msgType,
-      replyToId: replyingTo?.id || null,
-    });
-    setReplyingTo(null);
-  };
-
-  const toggleRecording = async () => {
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      setIsRecording(false);
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        mediaRecorderRef.current = mediaRecorder;
-        chunksRef.current = [];
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) chunksRef.current.push(e.data);
-        };
-
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-          const file = new File([blob], "voice_message.webm", { type: 'audio/webm' });
-          const url = await uploadFile(file);
-          if (url && socket) {
-            socket.emit("send_message", {
-              conversationId,
-              receiverId: currentActiveUser.id,
-              content: "Voice Message",
-              fileUrl: url,
-              type: "VOICE",
-              replyToId: replyingTo?.id || null,
-            });
-          }
-          stream.getTracks().forEach(track => track.stop());
-        };
-
-        mediaRecorder.start();
-        setIsRecording(true);
-      } catch (err) {
-        console.error("Error accessing microphone:", err);
-      }
-    }
-  };
-
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!searchQuery.trim()) {
@@ -506,27 +828,54 @@ export default function ChatWindow({
     }
   };
 
-  const scrollToMessage = (msgId: string) => {
-    const el = document.getElementById(`msg-${msgId}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setHighlightedMessageId(msgId);
-      setTimeout(() => setHighlightedMessageId(null), 2000);
-    }
-  };
-
   const closeSearch = () => {
     setIsSearching(false);
     setSearchQuery("");
     setSearchResults([]);
   };
 
-  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewMessage(e.target.value);
-    if (socket) {
-      socket.emit("typing", { conversationId, receiverId: activeUser.id });
+  const deleteMessage = useCallback(() => {
+    if (!socket || !messageToDelete) return;
+    socket.emit("delete_message", {
+      messageId: messageToDelete,
+      conversationId,
+      receiverId: currentActiveUser.id
+    });
+    setMessageToDelete(null);
+    setActiveMenu(null);
+  }, [socket, messageToDelete, conversationId, currentActiveUser.id]);
+
+  const addReaction = useCallback((msgId: string, emoji: string) => {
+    if (!socket) return;
+    socket.emit("add_reaction", {
+      messageId: msgId,
+      emoji,
+      conversationId,
+      receiverId: currentActiveUser.id
+    });
+    setActiveMenu(null);
+  }, [socket, conversationId, currentActiveUser.id]);
+
+  const startReply = useCallback((msg: Message) => {
+    setReplyingTo(msg);
+    setEditingMessage(null);
+    setActiveMenu(null);
+  }, []);
+
+  const startEdit = useCallback((msg: Message) => {
+    setEditingMessage(msg);
+    setReplyingTo(null);
+    setActiveMenu(null);
+  }, []);
+
+  const scrollToMessage = useCallback((msgId: string) => {
+    const el = document.getElementById(`msg-${msgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedMessageId(msgId);
+      setTimeout(() => setHighlightedMessageId(null), 2000);
     }
-  };
+  }, []);
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative bg-gradient-to-br from-[var(--color-bg)] to-[var(--color-sidebar)]">
@@ -622,147 +971,23 @@ export default function ChatWindow({
 
       {/* Messages Area */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 relative">
-        {messages.map((msg, index) => {
-          const isMe = msg.senderId === currentUser?.id;
-          const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
-          const showTime = index === 0 || new Date(msg.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 300000; // 5 mins
-
-          return (
-            <div key={msg.id} id={`msg-${msg.id}`} className={`flex flex-col ${isMe ? "items-end" : "items-start"} relative group`}>
-              {showTime && (
-                <div className="flex items-center gap-3 my-4 self-center w-full max-w-xs">
-                  <div className="flex-1 h-px bg-[var(--color-border)]/50"></div>
-                  <span className="text-[10px] font-semibold text-[var(--color-text-secondary)] bg-[var(--color-glass-bg)] backdrop-blur-sm px-4 py-1.5 rounded-full border border-[var(--color-glass-border)] shadow-sm whitespace-nowrap">
-                    {(() => {
-                      const d = new Date(msg.createdAt);
-                      if (isToday(d)) return `Today, ${format(d, "h:mm a")}`;
-                      if (isYesterday(d)) return `Yesterday, ${format(d, "h:mm a")}`;
-                      return format(d, "MMM d, h:mm a");
-                    })()}
-                  </span>
-                  <div className="flex-1 h-px bg-[var(--color-border)]/50"></div>
-                </div>
-              )}
-              <div className="flex items-center space-x-2">
-                {isMe && (
-                  <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
-                    <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-                      <Emoji unified={getEmojiUnified("👍")} size={18} emojiStyle={EmojiStyle.APPLE} />
-                    </button>
-                    <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-                      <Emoji unified={getEmojiUnified("❤️")} size={18} emojiStyle={EmojiStyle.APPLE} />
-                    </button>
-                    <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-                      <Emoji unified={getEmojiUnified("😂")} size={18} emojiStyle={EmojiStyle.APPLE} />
-                    </button>
-                    <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
-                    {msg.content !== "This message was deleted" && !msg.isDeleted && (
-                      <>
-                        <button onClick={() => startEdit(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Edit</button>
-                        <button onClick={() => setMessageToDelete(msg.id)} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs font-semibold px-1">Delete</button>
-                      </>
-                    )}
-                  </div>
-                )}
-                
-                <div
-                  className={`max-w-[85%] md:max-w-[70%] ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3 rounded-[1.5rem] md:rounded-[2rem]"} ${isMe ? 'rounded-br-sm' : 'rounded-bl-sm'} ${
-                    msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
-                    isEmojiOnly ? "bg-transparent shadow-none" :
-                    isMe
-                      ? "bg-[var(--color-primary)] text-[var(--color-background)] shadow-[0_2px_10px_-4px_var(--color-primary)]"
-                      : "bg-[var(--color-glass-bg)] backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] shadow-sm"
-                  }`}
-                >
-                  {msg.replyTo && !msg.isDeleted && (
-                    <div
-                      onClick={() => scrollToMessage(msg.replyTo!.id)}
-                      className={`text-xs p-2 rounded-lg mb-2 opacity-80 border-l-2 cursor-pointer hover:opacity-100 transition-opacity ${isMe ? "bg-white/20 border-white/40" : "bg-[var(--color-border)] border-[var(--color-primary)]"} truncate`}
-                    >
-                      <span className="font-semibold block">{msg.replyTo.sender.id === currentUser?.id ? 'You' : currentActiveUser.name}</span>
-                      {msg.replyTo.content}
-                    </div>
-                  )}
-
-                  {!msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl && (
-                    <img src={`${API_URL}${msg.fileUrl}`} alt="Sent image" className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain" />
-                  )}
-                  
-                  {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
-                    <a href={`${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className={`group flex items-center space-x-3 p-3 rounded-2xl mb-2 backdrop-blur-md border transition-all hover:scale-[1.02] ${isMe ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-[var(--color-glass-bg)] border-[var(--color-glass-border)] text-[var(--color-text-main)] shadow-sm hover:bg-[var(--color-bg)]/50'} no-underline`}>
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20' : 'bg-[var(--color-primary)]/10'}`}>
-                        <FileIcon className={`w-5 h-5 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
-                      </div>
-                      <div className="flex flex-col overflow-hidden">
-                         <span className="text-sm font-semibold truncate max-w-[150px] leading-tight">{msg.content}</span>
-                         <span className={`text-[10px] mt-0.5 ${isMe ? 'text-white/70' : 'text-[var(--color-text-secondary)]'}`}>Click to download</span>
-                      </div>
-                      <Download className={`w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity shrink-0 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
-                    </a>
-                  )}
-
-                  {!msg.isDeleted && msg.type === "VOICE" && msg.fileUrl && (
-                    <div className="mb-1">
-                      <VoicePlayer src={`${API_URL}${msg.fileUrl}`} isMe={isMe} />
-                    </div>
-                  )}
-
-                  {(msg.type === "TEXT" || msg.isDeleted) && (
-                    <div className={`leading-relaxed break-words ${isEmojiOnly ? "flex flex-wrap gap-1 my-2" : "text-[15px]"}`}>
-                      {isEmojiOnly ? (
-                        msg.content.match(/(\p{Extended_Pictographic}+(?:\u{200D}\p{Extended_Pictographic}+)*|\p{Emoji_Presentation}|\s)/gu)?.map((char, i) => (
-                           char.trim() === "" ? <span key={i} className="w-2" /> : <Emoji key={i} unified={getEmojiUnified(char)} size={64} emojiStyle={EmojiStyle.APPLE} />
-                        ))
-                      ) : (
-                        msg.content
-                      )}
-                    </div>
-                  )}
-                  
-                  <div className={`flex items-center justify-end mt-1 space-x-1 ${msg.isDeleted ? "text-[var(--color-text-secondary)]" : (isEmojiOnly || !isMe) ? "text-[var(--color-text-secondary)]" : "text-blue-100"}`}>
-                    {msg.isEdited && !msg.isDeleted && <span className="text-[10px] italic mr-1">edited</span>}
-                    <span className="text-[10px] opacity-80">
-                      {format(new Date(msg.createdAt), "h:mm a")}
-                    </span>
-                    {isMe && !msg.isDeleted && (
-                      <span className="text-xs ml-1 flex items-center font-bold">
-                        {msg.status === "SENT" && <Check className="w-3.5 h-3.5 opacity-60" />}
-                        {msg.status === "DELIVERED" && <CheckCheck className="w-3.5 h-3.5 opacity-60" />}
-                        {msg.status === "SEEN" && <CheckCheck className="w-3.5 h-3.5 text-cyan-300 opacity-100 drop-shadow-[0_0_2px_rgba(103,232,249,0.8)]" />}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {!isMe && (
-                   <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
-                      <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-                        <Emoji unified={getEmojiUnified("👍")} size={18} emojiStyle={EmojiStyle.APPLE} />
-                      </button>
-                      <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-                        <Emoji unified={getEmojiUnified("❤️")} size={18} emojiStyle={EmojiStyle.APPLE} />
-                      </button>
-                      <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-                        <Emoji unified={getEmojiUnified("😂")} size={18} emojiStyle={EmojiStyle.APPLE} />
-                      </button>
-                      <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
-                   </div>
-                )}
-              </div>
-              
-              {msg.reactions && msg.reactions.length > 0 && !msg.isDeleted && (
-                <div className={`flex -mt-2.5 z-10 animate-in fade-in zoom-in duration-300 ${isMe ? "mr-4" : "ml-4"}`}>
-                  <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full px-1.5 py-0.5 shadow-sm text-xs flex space-x-1 items-center">
-                    {Array.from(new Set(msg.reactions.map(r => r.emoji))).map(emoji => (
-                       <Emoji key={emoji} unified={getEmojiUnified(emoji)} size={14} emojiStyle={EmojiStyle.APPLE} />
-                    ))}
-                    <span className="text-[10px] text-[var(--color-text-secondary)] font-semibold">{msg.reactions.length}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {messages.map((msg, index) => (
+          <MessageItem 
+            key={msg.id}
+            msg={msg}
+            currentUser={currentUser}
+            currentActiveUser={currentActiveUser}
+            index={index}
+            messages={messages}
+            activeMenu={activeMenu}
+            addReaction={addReaction}
+            startReply={startReply}
+            startEdit={startEdit}
+            setMessageToDelete={setMessageToDelete}
+            scrollToMessage={scrollToMessage}
+            highlightedMessageId={highlightedMessageId}
+          />
+        ))}
         {isTyping && (
           <div className="flex flex-col items-start space-y-1 mb-2 ml-2 animate-in fade-in duration-300">
             <span className="text-[10px] text-[var(--color-text-secondary)] font-medium animate-pulse ml-2">
@@ -780,7 +1005,7 @@ export default function ChatWindow({
 
       {/* Scroll to bottom button */}
       {!isNearBottom && (
-        <div className="absolute bottom-28 right-8 z-30">
+        <div className="absolute bottom-32 right-8 z-30">
           <button
             onClick={scrollToBottom}
             className="w-10 h-10 bg-[var(--color-glass-bg)] backdrop-blur-xl border border-[var(--color-glass-border)] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-background)]"
@@ -794,7 +1019,7 @@ export default function ChatWindow({
       {newMsgToast && (
         <div
           onClick={() => { scrollToBottom(); setNewMsgToast(null); }}
-          className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 cursor-pointer animate-in fade-in"
+          className="absolute bottom-32 left-1/2 -translate-x-1/2 z-30 cursor-pointer animate-in fade-in"
         >
           <div className="bg-[var(--color-primary)] text-[var(--color-background)] px-5 py-2.5 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium hover:scale-105 transition-transform">
             <ArrowDown className="w-4 h-4" />
@@ -804,115 +1029,23 @@ export default function ChatWindow({
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="p-3 md:p-4 bg-[var(--color-glass-bg)] backdrop-blur-2xl border-t border-[var(--color-glass-border)] flex flex-col relative z-30">
-        {(replyingTo || editingMessage) && (
-          <div className="flex items-center justify-between bg-[var(--color-bg)]/80 backdrop-blur-md border border-[var(--color-glass-border)] px-4 py-3 rounded-2xl mb-2 shadow-sm z-0">
-            <div className="text-sm truncate opacity-80">
-              <span className="font-semibold text-[var(--color-primary)]">{editingMessage ? 'Editing message' : `Replying to ${replyingTo?.senderId === currentUser?.id ? 'Yourself' : currentActiveUser.name}`}</span>
-              <p className="text-xs truncate max-w-sm mt-0.5 text-[var(--color-text-main)]">{editingMessage?.content || replyingTo?.content}</p>
-            </div>
-            <button 
-              onClick={() => { setReplyingTo(null); setEditingMessage(null); setNewMessage(""); }}
-              className="text-[var(--color-text-secondary)] hover:text-red-500 transition-colors p-1"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-        <form onSubmit={handleSend} className="flex items-center gap-2 z-10 relative">
-          <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileSelect(e, "FILE")} />
-          <input type="file" accept="image/*" ref={imageInputRef} className="hidden" onChange={(e) => handleFileSelect(e, "IMAGE")} />
-          
-          <div className="relative">
-            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-2 text-[var(--color-text-secondary)] hover:text-yellow-500 transition-colors rounded-full hover:bg-[var(--color-bg)]">
-              <Smile className="w-6 h-6" />
-            </button>
-            {showEmojiPicker && (
-              <div className="absolute bottom-full left-0 mb-4 z-50">
-                <EmojiPicker 
-                  theme={Theme.AUTO}
-                  onEmojiClick={(emojiData) => setNewMessage(p => p + emojiData.emoji)} 
-                />
-              </div>
-            )}
-          </div>
+       {/* Input Area */}
+       <ChatInput 
+        socket={socket}
+        conversationId={conversationId}
+        currentUser={currentUser}
+        currentActiveUser={currentActiveUser}
+        token={token}
+        replyingTo={replyingTo}
+        setReplyingTo={setReplyingTo}
+        editingMessage={editingMessage}
+        setEditingMessage={setEditingMessage}
+        setMessages={setMessages}
+        scrollToBottom={scrollToBottom}
+      />
 
-          <div className="relative">
-            <button type="button" onClick={() => setShowAttachMenu(!showAttachMenu)} className={`p-2 transition-colors rounded-full hover:bg-[var(--color-bg)] ${showAttachMenu || scheduleTime || selfDestructTimer ? 'bg-[var(--color-bg)] text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'}`}>
-              <Plus className={`w-6 h-6 transition-transform ${showAttachMenu ? 'rotate-45' : ''}`} />
-            </button>
-            
-            {showAttachMenu && (
-              <div className="absolute bottom-full left-0 mb-4 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl shadow-xl flex flex-col p-2 space-y-1 w-48 z-40">
-                <button type="button" onClick={() => imageInputRef.current?.click()} className="flex items-center space-x-3 w-full text-left px-3 py-2 text-sm text-[var(--color-text-main)] hover:bg-[var(--color-chat-bg)] rounded-lg">
-                  <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><ImageIcon className="w-4 h-4" /></span>
-                  <span>Photo & Video</span>
-                </button>
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center space-x-3 w-full text-left px-3 py-2 text-sm text-[var(--color-text-main)] hover:bg-[var(--color-chat-bg)] rounded-lg">
-                  <span className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center shrink-0"><FileIcon className="w-4 h-4" /></span>
-                  <span>Document</span>
-                </button>
-                
-                <div className="h-px bg-[var(--color-border)] my-1"></div>
-
-                <div className="px-3 py-2 w-full">
-                  <label className="text-xs text-[var(--color-text-secondary)] font-bold uppercase mb-1 block">Scheduled Send</label>
-                  <input type="datetime-local" value={scheduleTime} onChange={e => {setScheduleTime(e.target.value);}} className="w-full bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded p-1.5 text-xs text-[var(--color-text-main)]" />
-                  {scheduleTime && <button type="button" onClick={() => setScheduleTime("")} className="text-[10px] text-red-500 hover:underline mt-1 w-full text-right">Clear Time</button>}
-                </div>
-
-                <div className="px-3 py-1 w-full pb-2">
-                  <label className="text-xs text-[var(--color-text-secondary)] font-bold uppercase mb-1 block">Self-Destruct Timer</label>
-                  <select value={selfDestructTimer || ""} onChange={e => {setSelfDestructTimer(Number(e.target.value) || null);}} className="w-full bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded p-1.5 text-xs text-[var(--color-text-main)] outline-none">
-                    <option value="">Off</option>
-                    <option value="15">15 Seconds</option>
-                    <option value="60">1 Minute</option>
-                    <option value="300">5 Minutes</option>
-                    <option value="3600">1 Hour</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex-1 bg-[var(--color-bg)]/60 backdrop-blur-md border border-[var(--color-glass-border)] rounded-[2rem] flex items-center px-4 md:px-6 py-3 md:py-4 focus-within:ring-2 focus-within:ring-[var(--color-primary)]/30 focus-within:bg-[var(--color-bg)] transition-all shadow-inner">
-            {uploading ? (
-              <span className="text-sm text-[var(--color-text-secondary)] italic">Uploading...</span>
-            ) : (
-              <input
-                ref={messageInputRef}
-                type="text"
-                value={newMessage}
-                onChange={handleTyping}
-                placeholder={isRecording ? "Recording audio..." : "Type a message..."}
-                disabled={isRecording}
-                className="flex-1 bg-transparent text-[var(--color-text-main)] focus:outline-none placeholder-[var(--color-text-secondary)] font-medium"
-              />
-            )}
-          </div>
-          
-          {newMessage.trim() || uploading ? (
-            <button 
-              type="submit" 
-              disabled={!newMessage.trim() || uploading}
-              className="px-4 py-3 bg-[var(--color-primary)] text-[var(--color-background)] rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_4px_14px_-4px_var(--color-primary)] hover:shadow-[0_6px_20px_-6px_var(--color-primary)] hover:-translate-y-0.5 cursor-pointer shrink-0 flex items-center justify-center"
-            >
-              <Send className="w-5 h-5 ml-1" />
-            </button>
-          ) : (
-            <button 
-              type="button" 
-              onClick={toggleRecording}
-              className={`px-4 py-3 text-[var(--color-background)] rounded-full transition-all hover:-translate-y-0.5 cursor-pointer shrink-0 flex items-center justify-center ${isRecording ? 'bg-red-500 animate-pulse shadow-[0_4px_14px_-4px_rgba(239,68,68,0.5)]' : 'bg-[var(--color-primary)] shadow-[0_4px_14px_-4px_var(--color-primary)] hover:shadow-[0_6px_20px_-6px_var(--color-primary)]'}`}
-            >
-              {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </button>
-          )}
-        </form>
-      </div>
-      {/* Delete Confirmation Modal */}
-      {messageToDelete && (
+       {/* Delete Confirmation Modal */}
+       {messageToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-[var(--color-chat-bg)] p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border border-[var(--color-border)] animate-in fade-in zoom-in duration-200">
             <h3 className="text-xl font-bold text-[var(--color-text-main)] mb-2">Delete Message?</h3>
@@ -934,7 +1067,6 @@ export default function ChatWindow({
           </div>
         </div>
       )}
-
     </div>
   );
 }
