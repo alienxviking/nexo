@@ -74,7 +74,7 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-gradient-to-br from-[var(--color-bg)] to-indigo-500/5 overflow-hidden md:p-3 md:gap-3">
+    <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-gradient-to-br from-[var(--color-bg)] to-indigo-500/5 overflow-hidden overflow-x-hidden md:p-3 md:gap-3">
       {/* Navigation Rail - Desktop */}
       <div className="hidden md:flex w-20 bg-[var(--color-glass-bg)] backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex-col items-center py-8 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.1)] z-40 transition-colors duration-300 rounded-[2.5rem]">
         <div className="w-12 h-12 bg-[var(--color-primary)] rounded-[1.25rem] flex items-center justify-center text-[var(--color-background)] font-black text-2xl mb-10 shadow-lg rotate-3 transition-all hover:rotate-12 hover:scale-110 cursor-pointer" style={{ boxShadow: '0 8px 20px -6px var(--color-primary)' }}>

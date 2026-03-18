@@ -62,12 +62,12 @@ export default function Sidebar({
 
   useEffect(() => {
     if (!socket) return;
-    
+
     const handleUserStatus = ({ userId, status, lastSeen }: any) => {
-      setConversations(prev => 
+      setConversations(prev =>
         prev.map(conv => ({
           ...conv,
-          participants: conv.participants.map(p => 
+          participants: conv.participants.map(p =>
             p.id === userId ? { ...p, status, lastSeen } : p
           )
         }))
@@ -79,8 +79,8 @@ export default function Sidebar({
       setConversations(prev => {
         const exists = prev.find(c => c.id === message.conversationId);
         if (exists) {
-          return prev.map(c => 
-            c.id === message.conversationId 
+          return prev.map(c =>
+            c.id === message.conversationId
               ? { ...c, messages: [message] }
               : c
           );
@@ -104,11 +104,11 @@ export default function Sidebar({
 
         // Show toast
         const toastId = `${message.id}-${Date.now()}`;
-        setToasts(prev => [...prev, { 
-          id: toastId, 
-          sender: senderName, 
+        setToasts(prev => [...prev, {
+          id: toastId,
+          sender: senderName,
           text: message.content?.slice(0, 60) || "Sent an attachment",
-          convId: message.conversationId 
+          convId: message.conversationId
         }]);
 
         // Auto dismiss after 4s
@@ -181,14 +181,14 @@ export default function Sidebar({
     try {
       const res = await fetch(`${API_URL}/api/conversations/get-or-create`, {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ targetUserId: targetUser.id })
       });
       const conv = await res.json();
-      
+
       setSearchQuery("");
       setSearchResults([]);
       onSelectConversation(targetUser, conv.id);
@@ -202,7 +202,7 @@ export default function Sidebar({
 
   return (
     <div className="w-full md:w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] relative">
-      
+
       {/* Toast notifications */}
       <div className="absolute top-0 left-0 right-0 z-50 p-2 space-y-2 pointer-events-none">
         {toasts.map(toast => (
@@ -218,7 +218,7 @@ export default function Sidebar({
               <p className="font-bold text-sm">{toast.sender}</p>
               <p className="text-xs opacity-80 truncate">{toast.text}</p>
             </div>
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); dismissToast(toast.id); }}
               className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
             >
@@ -248,7 +248,7 @@ export default function Sidebar({
           <div>
             <div className="px-3 py-2 text-[10px] font-bold text-[var(--color-text-secondary)] tracking-wider uppercase mb-1">Search Results</div>
             {searchResults.map(u => (
-              <div 
+              <div
                 key={u.id}
                 onClick={() => startConversation(u)}
                 className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-2xl group ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -282,11 +282,10 @@ export default function Sidebar({
               <div
                 key={conv.id}
                 onClick={() => onSelectConversation(otherUser, conv.id)}
-                className={`flex items-center p-4 mb-2 mx-2 cursor-pointer transition-all rounded-[2rem] group ${
-                  activeId === conv.id 
+                className={`flex items-center p-4 mb-2 mx-2 cursor-pointer transition-all rounded-[2rem] group ${activeId === conv.id
                     ? "bg-[var(--color-glass-bg)] ring-1 ring-[var(--color-primary)]/20 shadow-md scale-[1.02]"
                     : "hover:bg-[var(--color-chat-bg)]/60 hover:shadow-sm border border-transparent"
-                }`}
+                  }`}
               >
                 <div className="relative shrink-0">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white shadow-sm transition-transform group-hover:scale-105" style={{ background: getAvatarGradient(otherUser.name) }}>

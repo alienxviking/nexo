@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef, memo, useCallback } from "react";
+import { useEffect, useState, useRef, memo, useCallback, type TouchEvent as ReactTouchEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
-import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft } from "lucide-react";
+import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft, Reply } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import EmojiPicker, { Theme, Emoji, EmojiStyle } from "emoji-picker-react";
 import { getAvatarGradient } from "@/lib/avatarGradients";
@@ -25,16 +25,16 @@ const getEmojiUnified = (emoji: string) => {
 const SafeEmoji = ({ char, size }: { char: string; size: number }) => {
   const [error, setError] = useState(false);
   const unified = getEmojiUnified(char);
-  
+
   return error ? (
-    <span 
-      className="flex items-center justify-center select-none leading-none inline-flex" 
+    <span
+      className="flex items-center justify-center select-none leading-none inline-flex"
       style={{ fontSize: `${size * 0.8}px`, width: `${size}px`, height: `${size}px` }}
     >
       {char}
     </span>
   ) : (
-    <img 
+    <img
       src={`https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/${unified}.png`}
       alt={char}
       className="object-contain select-none"
@@ -48,25 +48,25 @@ const SafeEmoji = ({ char, size }: { char: string; size: number }) => {
   );
 };
 
-const MessageItem = memo(({ 
-  msg, 
-  currentUser, 
-  currentActiveUser, 
-  index, 
-  messages, 
-  activeMenu, 
-  addReaction, 
-  startReply, 
-  startEdit, 
-  setMessageToDelete, 
+const MessageItem = memo(({
+  msg,
+  currentUser,
+  currentActiveUser,
+  index,
+  messages,
+  activeMenu,
+  addReaction,
+  startReply,
+  startEdit,
+  setMessageToDelete,
   scrollToMessage,
   highlightedMessageId
-}: { 
-  msg: Message; 
-  currentUser: any; 
-  currentActiveUser: User; 
-  index: number; 
-  messages: Message[]; 
+}: {
+  msg: Message;
+  currentUser: any;
+  currentActiveUser: User;
+  index: number;
+  messages: Message[];
   activeMenu: string | null;
   addReaction: (id: string, emoji: string) => void;
   startReply: (msg: Message) => void;
@@ -79,6 +79,83 @@ const MessageItem = memo(({
   const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
   const showTime = index === 0 || new Date(msg.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 300000; // 5 mins
   const isHighlighted = highlightedMessageId === msg.id;
+
+  // --- Swipe-to-reply state ---
+  const [swipeX, setSwipeX] = useState(0);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const isSwipingRef = useRef(false);
+  const swipeLockedRef = useRef(false); // locks direction once determined
+
+  // --- Long-press reaction state ---
+  const [showLongPressMenu, setShowLongPressMenu] = useState(false);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressFiredRef = useRef(false);
+
+  const SWIPE_THRESHOLD = 60;
+
+  const handleTouchStart = (e: ReactTouchEvent) => {
+    const touch = e.touches[0];
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+    isSwipingRef.current = false;
+    swipeLockedRef.current = false;
+    longPressFiredRef.current = false;
+
+    // Start long-press timer
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      if (navigator.vibrate) navigator.vibrate(50);
+      setShowLongPressMenu(true);
+    }, 500);
+  };
+
+  const handleTouchMove = (e: ReactTouchEvent) => {
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchStartXRef.current;
+    const dy = touch.clientY - touchStartYRef.current;
+
+    // Cancel long-press if finger moves more than 10px
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
+
+    // Lock direction on first significant movement
+    if (!swipeLockedRef.current && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      swipeLockedRef.current = true;
+      isSwipingRef.current = Math.abs(dx) > Math.abs(dy); // horizontal wins
+    }
+
+    if (!isSwipingRef.current) return;
+
+    // Only allow right swipe (positive dx), cap at 120px
+    const clampedX = Math.max(0, Math.min(dx, 120));
+    setSwipeX(clampedX);
+  };
+
+  const handleTouchEnd = () => {
+    // Cancel long-press timer
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    if (swipeX >= SWIPE_THRESHOLD) {
+      if (navigator.vibrate) navigator.vibrate(30);
+      startReply(msg);
+    }
+    setSwipeX(0);
+    isSwipingRef.current = false;
+    swipeLockedRef.current = false;
+  };
+
+  const dismissLongPressMenu = () => setShowLongPressMenu(false);
+
+  // Swipe progress from 0 to 1
+  const swipeProgress = Math.min(swipeX / SWIPE_THRESHOLD, 1);
 
   return (
     <div key={msg.id} id={`msg-${msg.id}`} className={`flex flex-col ${isMe ? "items-end" : "items-start"} relative group transition-colors duration-500 ${isHighlighted ? "bg-[var(--color-primary)]/5 rounded-xl -mx-2 px-2" : ""}`}>
@@ -96,99 +173,35 @@ const MessageItem = memo(({
           <div className="flex-1 h-px bg-[var(--color-border)]/50"></div>
         </div>
       )}
-      <div className="flex items-center space-x-2">
-        {isMe && (
-          <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
-            <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-              <SafeEmoji char="👍" size={20} />
-            </button>
-            <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-              <SafeEmoji char="❤️" size={20} />
-            </button>
-            <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
-              <SafeEmoji char="😂" size={20} />
-            </button>
-            <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
-            {msg.content !== "This message was deleted" && !msg.isDeleted && (
-              <>
-                <button onClick={() => startEdit(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Edit</button>
-                <button onClick={() => setMessageToDelete(msg.id)} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs font-semibold px-1">Delete</button>
-              </>
-            )}
+
+      {/* Swipe-to-reply wrapper (mobile) */}
+      <div
+        className="relative w-full"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Reply icon indicator on swipe */}
+        {swipeX > 0 && (
+          <div
+            className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center z-0 pointer-events-none"
+            style={{ opacity: swipeProgress, transform: `translateY(-50%) scale(${0.5 + swipeProgress * 0.5})` }}
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${swipeProgress >= 1 ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-border)] text-[var(--color-text-secondary)]'} transition-colors duration-150`}>
+              <Reply className="w-4 h-4" />
+            </div>
           </div>
         )}
-        
+
         <div
-          className={`w-fit max-w-[85%] md:max-w-[70%] ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3 rounded-[1.25rem] md:rounded-[1.5rem]"} ${
-            msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
-            isEmojiOnly ? "bg-transparent shadow-none" :
-            isMe
-              ? "bg-[var(--color-primary)] text-[var(--color-background)] shadow-[0_2px_10px_-4px_var(--color-primary)] bubble-tail-me"
-              : "bg-[var(--color-glass-bg)] backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] shadow-sm bubble-tail-other"
-          }`}
+          className={`flex items-center space-x-2 ${isMe ? "justify-end" : "justify-start"}`}
+          style={{
+            transform: swipeX > 0 ? `translateX(${swipeX}px)` : undefined,
+            transition: swipeX > 0 ? 'none' : 'transform 0.25s ease-out',
+          }}
         >
-          {msg.replyTo && !msg.isDeleted && (
-            <div
-              onClick={() => scrollToMessage(msg.replyTo!.id)}
-              className={`text-xs p-2 rounded-lg mb-2 opacity-80 border-l-2 cursor-pointer hover:opacity-100 transition-opacity ${isMe ? "bg-white/20 border-white/40" : "bg-[var(--color-border)] border-[var(--color-primary)]"} truncate`}
-            >
-              <span className="font-semibold block">{msg.replyTo.sender.id === currentUser?.id ? 'You' : currentActiveUser.name}</span>
-              {msg.replyTo.content}
-            </div>
-          )}
-
-          {!msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl && (
-            <img src={`${API_URL}${msg.fileUrl}`} alt="Sent image" className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain" />
-          )}
-          
-          {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
-            <a href={`${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className={`group flex items-center space-x-3 p-3 rounded-2xl mb-2 backdrop-blur-md border transition-all hover:scale-[1.02] ${isMe ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-[var(--color-glass-bg)] border-[var(--color-glass-border)] text-[var(--color-text-main)] shadow-sm hover:bg-[var(--color-bg)]/50'} no-underline`}>
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20' : 'bg-[var(--color-primary)]/10'}`}>
-                <FileIcon className={`w-5 h-5 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
-              </div>
-              <div className="flex flex-col overflow-hidden">
-                 <span className="text-sm font-semibold truncate max-w-[150px] leading-tight">{msg.content}</span>
-                 <span className={`text-[10px] mt-0.5 ${isMe ? 'text-white/70' : 'text-[var(--color-text-secondary)]'}`}>Click to download</span>
-              </div>
-              <Download className={`w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity shrink-0 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
-            </a>
-          )}
-
-          {!msg.isDeleted && msg.type === "VOICE" && msg.fileUrl && (
-            <div className="mb-1">
-              <VoicePlayer src={`${API_URL}${msg.fileUrl}`} isMe={isMe} />
-            </div>
-          )}
-
-          {(msg.type === "TEXT" || msg.isDeleted) && (
-            <div className={`leading-relaxed break-words ${isEmojiOnly ? "flex flex-wrap gap-2 py-3 justify-center min-h-[4rem]" : "text-[15px]"}`}>
-              {isEmojiOnly ? (
-                msg.content.match(/\p{Extended_Pictographic}\uFE0F?(?:\u200d\p{Extended_Pictographic}\uFE0F?)*|\p{Emoji_Presentation}|\p{Emoji_Component}/gu)?.map((char, i) => (
-                   <SafeEmoji key={i} char={char} size={64} />
-                ))
-              ) : (
-                msg.content
-              )}
-            </div>
-          )}
-          
-          <div className={`flex items-center justify-end mt-1 space-x-1 ${msg.isDeleted ? "text-[var(--color-text-secondary)]" : (isEmojiOnly || !isMe) ? "text-[var(--color-text-secondary)]" : "text-blue-100"}`}>
-            {msg.isEdited && !msg.isDeleted && <span className="text-[10px] italic mr-1">edited</span>}
-            <span className="text-[10px] opacity-80">
-              {format(new Date(msg.createdAt), "h:mm a")}
-            </span>
-            {isMe && !msg.isDeleted && (
-              <span className="text-xs ml-1 flex items-center font-bold">
-                {msg.status === "SENT" && <Check className="w-3.5 h-3.5 opacity-60" />}
-                {msg.status === "DELIVERED" && <CheckCheck className="w-3.5 h-3.5 opacity-60" />}
-                {msg.status === "SEEN" && <CheckCheck className="w-3.5 h-3.5 text-cyan-300 opacity-100 drop-shadow-[0_0_2px_rgba(103,232,249,0.8)]" />}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {!isMe && (
-           <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
+          {isMe && (
+            <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm hidden md:flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
               <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
                 <SafeEmoji char="👍" size={20} />
               </button>
@@ -198,16 +211,158 @@ const MessageItem = memo(({
               <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
                 <SafeEmoji char="😂" size={20} />
               </button>
+              <button onClick={() => addReaction(msg.id, "😮")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="😮" size={20} />
+              </button>
+              <button onClick={() => addReaction(msg.id, "😢")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="😢" size={20} />
+              </button>
               <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
-           </div>
-        )}
+              {msg.content !== "This message was deleted" && !msg.isDeleted && (
+                <>
+                  <button onClick={() => startEdit(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Edit</button>
+                  <button onClick={() => setMessageToDelete(msg.id)} className="text-[var(--color-text-secondary)] hover:text-red-500 text-xs font-semibold px-1">Delete</button>
+                </>
+              )}
+            </div>
+          )}
+
+          <div
+            className={`w-fit max-w-[75%] md:max-w-[70%] ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3 rounded-[1.25rem] md:rounded-[1.5rem]"} ${msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
+              isEmojiOnly ? "bg-transparent shadow-none" :
+                isMe
+                  ? "bg-[var(--color-primary)] text-[var(--color-background)] shadow-[0_2px_10px_-4px_var(--color-primary)] bubble-tail-me"
+                  : "bg-[var(--color-glass-bg)] backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] shadow-sm bubble-tail-other"
+              }`}
+          >
+            {msg.replyTo && !msg.isDeleted && (
+              <div
+                onClick={() => scrollToMessage(msg.replyTo!.id)}
+                className={`text-xs p-2 rounded-lg mb-2 opacity-80 border-l-2 cursor-pointer hover:opacity-100 transition-opacity ${isMe ? "bg-white/20 border-white/40" : "bg-[var(--color-border)] border-[var(--color-primary)]"} truncate`}
+              >
+                <span className="font-semibold block">{msg.replyTo.sender.id === currentUser?.id ? 'You' : currentActiveUser.name}</span>
+                {msg.replyTo.content}
+              </div>
+            )}
+
+            {!msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl && (
+              <img src={`${API_URL}${msg.fileUrl}`} alt="Sent image" className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain" />
+            )}
+
+            {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
+              <a href={`${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className={`group flex items-center space-x-3 p-3 rounded-2xl mb-2 backdrop-blur-md border transition-all hover:scale-[1.02] ${isMe ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-[var(--color-glass-bg)] border-[var(--color-glass-border)] text-[var(--color-text-main)] shadow-sm hover:bg-[var(--color-bg)]/50'} no-underline`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20' : 'bg-[var(--color-primary)]/10'}`}>
+                  <FileIcon className={`w-5 h-5 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
+                </div>
+                <div className="flex flex-col overflow-hidden">
+                  <span className="text-sm font-semibold truncate max-w-[150px] leading-tight">{msg.content}</span>
+                  <span className={`text-[10px] mt-0.5 ${isMe ? 'text-white/70' : 'text-[var(--color-text-secondary)]'}`}>Click to download</span>
+                </div>
+                <Download className={`w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity shrink-0 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
+              </a>
+            )}
+
+            {!msg.isDeleted && msg.type === "VOICE" && msg.fileUrl && (
+              <div className="mb-1">
+                <VoicePlayer src={`${API_URL}${msg.fileUrl}`} isMe={isMe} />
+              </div>
+            )}
+
+            {(msg.type === "TEXT" || msg.isDeleted) && (
+              <div className={`leading-relaxed break-words ${isEmojiOnly ? "flex flex-wrap gap-2 py-3 justify-center min-h-[4rem]" : "text-[15px]"}`}>
+                {isEmojiOnly ? (
+                  msg.content.match(/\p{Extended_Pictographic}\uFE0F?(?:\u200d\p{Extended_Pictographic}\uFE0F?)*|\p{Emoji_Presentation}|\p{Emoji_Component}/gu)?.map((char, i) => (
+                    <SafeEmoji key={i} char={char} size={64} />
+                  ))
+                ) : (
+                  msg.content
+                )}
+              </div>
+            )}
+
+            <div className={`flex items-center justify-end mt-1 space-x-1 ${msg.isDeleted ? "text-[var(--color-text-secondary)]" : (isEmojiOnly || !isMe) ? "text-[var(--color-text-secondary)]" : "text-blue-100"}`}>
+              {msg.isEdited && !msg.isDeleted && <span className="text-[10px] italic mr-1">edited</span>}
+              <span className="text-[10px] opacity-80">
+                {format(new Date(msg.createdAt), "h:mm a")}
+              </span>
+              {isMe && !msg.isDeleted && (
+                <span className="text-xs ml-1 flex items-center font-bold">
+                  {msg.status === "SENT" && <Check className="w-3.5 h-3.5 opacity-60" />}
+                  {msg.status === "DELIVERED" && <CheckCheck className="w-3.5 h-3.5 opacity-60" />}
+                  {msg.status === "SEEN" && <CheckCheck className="w-3.5 h-3.5 text-cyan-300 opacity-100 drop-shadow-[0_0_2px_rgba(103,232,249,0.8)]" />}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {!isMe && (
+            <div className={`opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-full px-2 py-1 shadow-sm hidden md:flex items-center space-x-2 ${activeMenu === msg.id ? 'opacity-100 scale-100' : ''}`}>
+              <button onClick={() => addReaction(msg.id, "👍")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="👍" size={20} />
+              </button>
+              <button onClick={() => addReaction(msg.id, "❤️")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="❤️" size={20} />
+              </button>
+              <button onClick={() => addReaction(msg.id, "😂")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="😂" size={20} />
+              </button>
+              <button onClick={() => addReaction(msg.id, "😮")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="😮" size={20} />
+              </button>
+              <button onClick={() => addReaction(msg.id, "😢")} className="hover:scale-125 transition-transform flex items-center justify-center p-1">
+                <SafeEmoji char="😢" size={20} />
+              </button>
+              <button onClick={() => startReply(msg)} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] text-xs font-semibold px-1">Reply</button>
+            </div>
+          )}
+        </div>
       </div>
-      
+
+      {/* Long-press reaction popup (mobile) */}
+      {showLongPressMenu && (
+        <>
+          <div className="fixed inset-0 z-[90]" onClick={dismissLongPressMenu} onTouchEnd={dismissLongPressMenu} />
+          <div className={`absolute z-[100] ${isMe ? 'right-2' : 'left-2'} -top-2 animate-in fade-in zoom-in-95 duration-200`}>
+            <div className="bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-2xl px-2 py-1.5 shadow-xl flex items-center space-x-1">
+              <button onClick={() => { addReaction(msg.id, "👍"); dismissLongPressMenu(); }} className="hover:scale-125 active:scale-95 transition-transform flex items-center justify-center p-1.5">
+                <SafeEmoji char="👍" size={24} />
+              </button>
+              <button onClick={() => { addReaction(msg.id, "❤️"); dismissLongPressMenu(); }} className="hover:scale-125 active:scale-95 transition-transform flex items-center justify-center p-1.5">
+                <SafeEmoji char="❤️" size={24} />
+              </button>
+              <button onClick={() => { addReaction(msg.id, "😂"); dismissLongPressMenu(); }} className="hover:scale-125 active:scale-95 transition-transform flex items-center justify-center p-1.5">
+                <SafeEmoji char="😂" size={24} />
+              </button>
+              <button onClick={() => { addReaction(msg.id, "😮"); dismissLongPressMenu(); }} className="hover:scale-125 active:scale-95 transition-transform flex items-center justify-center p-1.5">
+                <SafeEmoji char="😮" size={24} />
+              </button>
+              <button onClick={() => { addReaction(msg.id, "😢"); dismissLongPressMenu(); }} className="hover:scale-125 active:scale-95 transition-transform flex items-center justify-center p-1.5">
+                <SafeEmoji char="😢" size={24} />
+              </button>
+              <div className="w-px h-6 bg-[var(--color-border)] mx-1"></div>
+              <button onClick={() => { startReply(msg); dismissLongPressMenu(); }} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] active:scale-95 transition-all text-xs font-bold px-2 py-1">
+                Reply
+              </button>
+              {isMe && msg.content !== "This message was deleted" && !msg.isDeleted && (
+                <>
+                  <button onClick={() => { startEdit(msg); dismissLongPressMenu(); }} className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] active:scale-95 transition-all text-xs font-bold px-2 py-1">
+                    Edit
+                  </button>
+                  <button onClick={() => { setMessageToDelete(msg.id); dismissLongPressMenu(); }} className="text-[var(--color-text-secondary)] hover:text-red-500 active:scale-95 transition-all text-xs font-bold px-2 py-1">
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
       {msg.reactions && msg.reactions.length > 0 && !msg.isDeleted && (
         <div className={`flex -mt-2.5 z-10 animate-in fade-in zoom-in duration-300 ${isMe ? "mr-4" : "ml-4"}`}>
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full px-1.5 py-0.5 shadow-sm text-xs flex space-x-1 items-center">
             {Array.from(new Set(msg.reactions.map(r => r.emoji))).map(emoji => (
-               <Emoji key={emoji} unified={getEmojiUnified(emoji)} size={14} emojiStyle={EmojiStyle.APPLE} />
+              <Emoji key={emoji} unified={getEmojiUnified(emoji)} size={14} emojiStyle={EmojiStyle.APPLE} />
             ))}
             <span className="text-[10px] text-[var(--color-text-secondary)] font-semibold">{msg.reactions.length}</span>
           </div>
@@ -245,13 +400,13 @@ interface Message {
   fileUrl?: string;
 }
 
-const ChatInput = memo(({ 
-  socket, 
-  conversationId, 
-  currentUser, 
-  currentActiveUser, 
+const ChatInput = memo(({
+  socket,
+  conversationId,
+  currentUser,
+  currentActiveUser,
   token,
-  replyingTo, 
+  replyingTo,
   setReplyingTo,
   editingMessage,
   setEditingMessage,
@@ -302,7 +457,7 @@ const ChatInput = memo(({
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-    
+
     try {
       const res = await fetch(`${API_URL}/api/upload`, {
         method: "POST",
@@ -339,7 +494,7 @@ const ChatInput = memo(({
     } else {
       let scheduledAtDate = null;
       if (scheduleTime) scheduledAtDate = new Date(scheduleTime).toISOString();
-      
+
       let selfDestructAtDate = null;
       if (selfDestructTimer) selfDestructAtDate = new Date(Date.now() + selfDestructTimer * 1000).toISOString();
 
@@ -469,57 +624,57 @@ const ChatInput = memo(({
       <form onSubmit={handleSend} className="relative flex flex-col space-y-3">
         {showAttachMenu && (
           <div className="absolute bottom-full left-0 mb-4 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-2xl shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 zoom-in-95 duration-200 z-50 min-w-[240px]">
-             <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full flex items-center space-x-3 px-6 py-3.5 hover:bg-[var(--color-chat-bg)] transition-colors">
-               <ImageIcon className="w-5 h-5 text-pink-500" />
-               <span className="text-sm font-medium text-[var(--color-text-main)]">Image</span>
-             </button>
-             <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full flex items-center space-x-3 px-6 py-3.5 hover:bg-[var(--color-chat-bg)] transition-colors border-t border-[var(--color-border)]">
-               <FileIcon className="w-5 h-5 text-indigo-500" />
-               <span className="text-sm font-medium text-[var(--color-text-main)]">Document</span>
-             </button>
-             
-             <div className="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg)]/50">
-               <div className="flex items-center space-x-3 mb-3">
-                 <Clock className="w-5 h-5 text-blue-500" />
-                 <span className="text-sm font-bold text-[var(--color-text-main)]">Scheduled Send</span>
-               </div>
-               <input 
-                 type="datetime-local" 
-                 value={scheduleTime} 
-                 onChange={e => setScheduleTime(e.target.value)} 
-                 className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-xs text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" 
-               />
-               {scheduleTime && (
-                 <button type="button" onClick={() => setScheduleTime("")} className="text-[10px] text-red-500 hover:underline mt-2 w-full text-right font-medium">
-                   Clear Schedule
-                 </button>
-               )}
-             </div>
+            <button type="button" onClick={() => imageInputRef.current?.click()} className="w-full flex items-center space-x-3 px-6 py-3.5 hover:bg-[var(--color-chat-bg)] transition-colors">
+              <ImageIcon className="w-5 h-5 text-pink-500" />
+              <span className="text-sm font-medium text-[var(--color-text-main)]">Image</span>
+            </button>
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="w-full flex items-center space-x-3 px-6 py-3.5 hover:bg-[var(--color-chat-bg)] transition-colors border-t border-[var(--color-border)]">
+              <FileIcon className="w-5 h-5 text-indigo-500" />
+              <span className="text-sm font-medium text-[var(--color-text-main)]">Document</span>
+            </button>
 
-             <div className="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg)]/50">
-                <div className="flex items-center space-x-3 mb-3">
-                  <Bomb className={`w-5 h-5 ${selfDestructTimer ? 'text-orange-500 animate-pulse' : 'text-orange-400'}`} />
-                  <span className="text-sm font-bold text-[var(--color-text-main)]">Self-Destruct</span>
-                </div>
-                <select 
-                  value={selfDestructTimer || ""} 
-                  onChange={e => setSelfDestructTimer(e.target.value ? parseInt(e.target.value) : null)}
-                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-xs text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer"
-                >
-                  <option value="">Status: Off</option>
-                  <option value="5">5 Seconds</option>
-                  <option value="30">30 Seconds</option>
-                  <option value="3600">1 Hour</option>
-                  <option value="86400">1 Day</option>
-                </select>
-             </div>
+            <div className="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg)]/50">
+              <div className="flex items-center space-x-3 mb-3">
+                <Clock className="w-5 h-5 text-blue-500" />
+                <span className="text-sm font-bold text-[var(--color-text-main)]">Scheduled Send</span>
+              </div>
+              <input
+                type="datetime-local"
+                value={scheduleTime}
+                onChange={e => setScheduleTime(e.target.value)}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-xs text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+              {scheduleTime && (
+                <button type="button" onClick={() => setScheduleTime("")} className="text-[10px] text-red-500 hover:underline mt-2 w-full text-right font-medium">
+                  Clear Schedule
+                </button>
+              )}
+            </div>
+
+            <div className="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg)]/50">
+              <div className="flex items-center space-x-3 mb-3">
+                <Bomb className={`w-5 h-5 ${selfDestructTimer ? 'text-orange-500 animate-pulse' : 'text-orange-400'}`} />
+                <span className="text-sm font-bold text-[var(--color-text-main)]">Self-Destruct</span>
+              </div>
+              <select
+                value={selfDestructTimer || ""}
+                onChange={e => setSelfDestructTimer(e.target.value ? parseInt(e.target.value) : null)}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl p-2.5 text-xs text-[var(--color-text-main)] outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer"
+              >
+                <option value="">Status: Off</option>
+                <option value="5">5 Seconds</option>
+                <option value="30">30 Seconds</option>
+                <option value="3600">1 Hour</option>
+                <option value="86400">1 Day</option>
+              </select>
+            </div>
           </div>
         )}
 
         {showEmojiPicker && (
           <div className="absolute bottom-full right-0 mb-4 z-50 animate-in slide-in-from-bottom-4 zoom-in-95 duration-200 shadow-2xl">
-            <EmojiPicker 
-              theme={Theme.AUTO} 
+            <EmojiPicker
+              theme={Theme.AUTO}
               onEmojiClick={(emojiData) => setNewMessage(prev => prev + emojiData.emoji)}
               lazyLoadEmojis={true}
               emojiStyle={EmojiStyle.APPLE}
@@ -527,17 +682,17 @@ const ChatInput = memo(({
           </div>
         )}
 
-        <div className="flex items-end space-x-2 md:space-x-4">
-          <div className="flex items-center space-x-1 md:space-x-2 pb-1.5">
-            <button 
-              type="button" 
-              onClick={() => setShowAttachMenu(!showAttachMenu)} 
-              className={`p-2.5 rounded-full transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20' : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-chat-bg)] hover:text-[var(--color-primary)]'}`}
-            >
-              <Plus className={`w-6 h-6 transition-transform duration-200 ${showAttachMenu ? 'rotate-45' : ''}`} />
-            </button>
-          </div>
-          
+        <div className="flex items-center space-x-2 md:space-x-4">
+          <button
+            type="button"
+            onClick={() => setShowAttachMenu(!showAttachMenu)}
+            className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-2xl md:rounded-[2rem] transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer 
+              ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20' 
+              : 'bg-[var(--color-chat-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] shadow-sm'}`}
+          >
+            <Plus className={`w-6 h-6 transition-transform duration-200 ${showAttachMenu ? 'rotate-45' : ''}`} />
+          </button>
+
           <div className="flex-1 relative group">
             <input
               ref={messageInputRef}
@@ -545,25 +700,27 @@ const ChatInput = memo(({
               value={newMessage}
               onChange={handleTyping}
               placeholder={editingMessage ? "Edit message..." : "Type a message..."}
-              className="w-full py-3.5 md:py-4 pl-6 md:pl-8 pr-12 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-[1.5rem] md:rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-[var(--color-primary)] transition-all shadow-sm text-sm md:text-base text-[var(--color-text-main)]"
+              className="w-full h-12 md:h-14 pl-6 md:pl-8 pr-12 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-2xl md:rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-[var(--color-primary)] transition-all shadow-sm text-sm md:text-base text-[var(--color-text-main)] placeholder:text-[var(--color-text-secondary)]/50"
             />
-            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${showEmojiPicker ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'}`}><Smile className="w-6 h-6" /></button>
+            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${showEmojiPicker ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'}`}>
+              <Smile className="w-6 h-6" />
+            </button>
           </div>
 
-          <div className="flex items-center space-x-1 md:space-x-2 pb-1.5">
+          <div className="flex items-center">
             {newMessage.trim() || uploading ? (
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={uploading}
-                className="p-3.5 md:p-4 bg-[var(--color-primary)] text-white rounded-full shadow-lg hover:shadow-[var(--color-primary)]/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-[var(--color-primary)] text-white rounded-full shadow-lg hover:shadow-[var(--color-primary)]/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
               >
-                {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Send className="w-5 h-5" />}
+                {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Send className="w-5 h-5 ml-0.5" />}
               </button>
             ) : (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={toggleRecording}
-                className={`p-3.5 md:p-4 rounded-full shadow-md transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-[var(--color-chat-bg)] text-[var(--color-text-secondary)] hover:text-red-500 hover:bg-red-50'}`}
+                className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-full border transition-all shadow-sm ${isRecording ? 'bg-red-500 border-red-500 text-white animate-pulse' : 'bg-[var(--color-chat-bg)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/30'}`}
               >
                 {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
@@ -593,7 +750,7 @@ export default function ChatWindow({
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [currentActiveUser, setCurrentActiveUser] = useState<User>(activeUser);
-  
+
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -601,11 +758,11 @@ export default function ChatWindow({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
-  
+
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Message[]>([]);
-  
+
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
 
   // Smart scroll state
@@ -629,9 +786,9 @@ export default function ChatWindow({
     const handleReceiveMessage = (message: Message) => {
       if (message.conversationId === conversationId) {
         setMessages((prev) => [...prev, message]);
-        socket.emit("mark_all_seen", { 
-          conversationId, 
-          senderId: message.senderId 
+        socket.emit("mark_all_seen", {
+          conversationId,
+          senderId: message.senderId
         });
 
         // Smart scroll: only auto-scroll if user is near the bottom
@@ -673,7 +830,7 @@ export default function ChatWindow({
     const handleMessageSeen = ({ messageId, conversationId: convId }: any) => {
       if (convId === conversationId) {
         setMessages((prev) =>
-           prev.map((m) => (m.id === messageId ? { ...m, status: "SEEN" } : m))
+          prev.map((m) => (m.id === messageId ? { ...m, status: "SEEN" } : m))
         );
       }
     };
@@ -795,7 +952,7 @@ export default function ChatWindow({
       const data = await res.json();
       setMessages(data);
       scrollToBottom();
-      
+
       // Mark loaded unread messages from the other user as SEEN
       if (socket && Array.isArray(data)) {
         const hasUnread = data.some((msg: Message) => msg.senderId === currentActiveUser.id && msg.status !== "SEEN");
@@ -883,7 +1040,7 @@ export default function ChatWindow({
       <div className="flex items-center justify-between p-4 pt-10 md:p-6 md:pt-12 border-b border-[var(--color-glass-border)] bg-[var(--color-glass-bg)] backdrop-blur-xl shadow-sm z-20 sticky top-0">
         <div className="flex items-center space-x-2 md:space-x-3">
           {onBack && (
-            <button 
+            <button
               onClick={onBack}
               className="md:hidden p-2 -ml-1 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
             >
@@ -911,21 +1068,21 @@ export default function ChatWindow({
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {isSearching ? (
-             <form onSubmit={handleSearch} className="flex items-center bg-[var(--color-bg)] rounded-full px-3 py-1 border border-[var(--color-primary)] transition-all">
-               <input
-                 type="text"
-                 autoFocus
-                 value={searchQuery}
-                 onChange={(e) => { setSearchQuery(e.target.value); }}
-                 onKeyUp={() => handleSearch()}
-                 placeholder="Search messages..."
-                 className="bg-transparent border-none focus:outline-none text-sm w-40 text-[var(--color-text-main)]"
-               />
-               <button type="button" onClick={closeSearch} className="text-[var(--color-text-secondary)] ml-2 hover:text-red-500"><X className="w-4 h-4" /></button>
-             </form>
+            <form onSubmit={handleSearch} className="flex items-center bg-[var(--color-bg)] rounded-full px-3 py-1 border border-[var(--color-primary)] transition-all">
+              <input
+                type="text"
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); }}
+                onKeyUp={() => handleSearch()}
+                placeholder="Search messages..."
+                className="bg-transparent border-none focus:outline-none text-sm w-40 text-[var(--color-text-main)]"
+              />
+              <button type="button" onClick={closeSearch} className="text-[var(--color-text-secondary)] ml-2 hover:text-red-500"><X className="w-4 h-4" /></button>
+            </form>
           ) : (
             <button onClick={() => setIsSearching(true)} className="p-2 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors rounded-full hover:bg-[var(--color-bg)]">
               <Search className="w-5 h-5" />
@@ -970,9 +1127,9 @@ export default function ChatWindow({
       )}
 
       {/* Messages Area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 relative">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-4 relative">
         {messages.map((msg, index) => (
-          <MessageItem 
+          <MessageItem
             key={msg.id}
             msg={msg}
             currentUser={currentUser}
@@ -1029,8 +1186,8 @@ export default function ChatWindow({
         </div>
       )}
 
-       {/* Input Area */}
-       <ChatInput 
+      {/* Input Area */}
+      <ChatInput
         socket={socket}
         conversationId={conversationId}
         currentUser={currentUser}
@@ -1044,20 +1201,20 @@ export default function ChatWindow({
         scrollToBottom={scrollToBottom}
       />
 
-       {/* Delete Confirmation Modal */}
-       {messageToDelete && (
+      {/* Delete Confirmation Modal */}
+      {messageToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-[var(--color-chat-bg)] p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border border-[var(--color-border)] animate-in fade-in zoom-in duration-200">
             <h3 className="text-xl font-bold text-[var(--color-text-main)] mb-2">Delete Message?</h3>
             <p className="text-[var(--color-text-secondary)] mb-6">Are you sure you want to delete this message? This action cannot be undone.</p>
             <div className="flex justify-end space-x-3">
-              <button 
+              <button
                 onClick={() => setMessageToDelete(null)}
                 className="px-4 py-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg)] rounded-xl transition-colors font-medium"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={deleteMessage}
                 className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors shadow-sm shadow-red-500/20 font-medium"
               >
