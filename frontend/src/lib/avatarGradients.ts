@@ -1,18 +1,18 @@
 // Gradient pairs for user avatars — hashed from the username
-const GRADIENT_PAIRS = [
-  // Cute Pastel Colors
-  ['#FFD1DC', '#FFB7B2'],  // Pastel Pink to Soft Rose
-  ['#E2F0CB', '#B5EAD7'],  // Mint to Soft Seafoam
-  ['#C7CEEA', '#B5B9FF'],  // Lavender to Periwinkle
-  ['#FFDAC1', '#FFB7B2'],  // Peach to Melon
-  ['#FF9AA2', '#FFB7B2'],  // Strawberry to Coral Pink
-  ['#B5EAD7', '#87D3C6'],  // Soft Aqua to Sea Green
-  ['#E5D4FF', '#D2B4FF'],  // Lilac to Soft Purple
-  ['#FFFED2', '#FDFD96'],  // Buttercream to Pastel Yellow
-  ['#DED9EB', '#C4B9D8'],  // Heather to Lavender
-  ['#FAD1E6', '#F3A8D2'],  // Cotton Candy Pink
-  ['#C1E1C1', '#A3D3A3'],  // Pastel Green
-  ['#B1EBFE', '#8CDBFC'],  // Baby Blue
+// Cute Pastel Colors
+const AVATAR_COLORS = [
+  '#FFB7B2', // Soft Coral/Rose
+  '#B5EAD7', // Soft Seafoam
+  '#C7CEEA', // Periwinkle
+  '#FFDAC1', // Peach
+  '#FF9AA2', // Strawberry
+  '#87D3C6', // Soft Aqua
+  '#D2B4FF', // Soft Purple
+  '#FDFD96', // Pastel Yellow
+  '#C4B9D8', // Heather Lavender
+  '#F3A8D2', // Cotton Candy
+  '#A3D3A3', // Pastel Green
+  '#8CDBFC', // Baby Blue
 ];
 
 function hashString(str: string): number {
@@ -26,12 +26,12 @@ function hashString(str: string): number {
 }
 
 export function getAvatarGradient(name: string): string {
-  const index = hashString(name) % GRADIENT_PAIRS.length;
-  const [from, to] = GRADIENT_PAIRS[index];
-  return `linear-gradient(135deg, ${from}, ${to})`;
+  const index = hashString(name) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
 }
 
 export function getAvatarColors(name: string): { from: string; to: string } {
-  const index = hashString(name) % GRADIENT_PAIRS.length;
-  return { from: GRADIENT_PAIRS[index][0], to: GRADIENT_PAIRS[index][1] };
+  const index = hashString(name) % AVATAR_COLORS.length;
+  // Fallback to same color if gradient is expected
+  return { from: AVATAR_COLORS[index], to: AVATAR_COLORS[index] };
 }

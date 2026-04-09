@@ -1068,7 +1068,7 @@ export default function ChatWindow({
             </button>
           )}
           <div className="relative">
-            <div className="w-11 h-11 rounded-[16px] border-2 border-dashed border-white/50 flex items-center justify-center text-[var(--color-text-main)] font-black text-lg shadow-md" style={{ background: getAvatarGradient(currentActiveUser.name) }}>
+            <div className="w-11 h-11 rounded-[16px] border-2 border-dashed flex items-center justify-center font-black text-lg shadow-md" style={{ backgroundColor: 'var(--color-bg)', borderColor: getAvatarGradient(currentActiveUser.name), color: getAvatarGradient(currentActiveUser.name) }}>
               {currentActiveUser.name.charAt(0)}
             </div>
             {currentActiveUser.status === "ONLINE" && (

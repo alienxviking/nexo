@@ -121,7 +121,7 @@ export default function OnlineUsersPanel({
                 className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-[2rem] group ${isStarting ? 'opacity-50 cursor-not-allowed' : ''} ${isDoodleMode ? 'doodle-border' : ''}`}
               >
                 <div className="relative shrink-0">
-                  <div className={`w-11 h-11 rounded-[16px] border-2 border-dashed border-[var(--color-primary)]/40 flex items-center justify-center text-[var(--color-text-main)] font-black shadow-sm group-hover:scale-105 transition-transform text-lg ${isDoodleMode ? 'group-hover:animate-wobbly' : ''}`} style={{ background: getAvatarGradient(u.name) }}>
+                  <div className={`w-11 h-11 rounded-[16px] border-2 border-dashed flex items-center justify-center font-black shadow-sm group-hover:scale-105 transition-transform text-lg ${isDoodleMode ? 'group-hover:animate-wobbly' : ''}`} style={{ backgroundColor: 'var(--color-bg)', borderColor: getAvatarGradient(u.name), color: getAvatarGradient(u.name) }}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border border-[var(--color-background)] animate-pulse-dot"></div>
@@ -149,7 +149,7 @@ export default function OnlineUsersPanel({
                 className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-[2rem] group opacity-60 hover:opacity-100 ${isStarting ? 'opacity-30 cursor-not-allowed' : ''}`}
               >
                 <div className="relative shrink-0">
-                  <div className="w-11 h-11 rounded-[16px] border-2 border-dashed border-[var(--color-primary)]/40 flex items-center justify-center text-[var(--color-text-main)] font-black shadow-sm group-hover:scale-105 transition-transform text-lg" style={{ background: getAvatarGradient(u.name) }}>
+                  <div className="w-11 h-11 rounded-[16px] border-2 border-dashed flex items-center justify-center font-black shadow-sm group-hover:scale-105 transition-transform text-lg" style={{ backgroundColor: 'var(--color-bg)', borderColor: getAvatarGradient(u.name), color: getAvatarGradient(u.name) }}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                 </div>
