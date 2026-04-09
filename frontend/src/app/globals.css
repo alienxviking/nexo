@@ -1,214 +1,58 @@
 @import "tailwindcss";
 
-/* --- THEME 1: Strawberry Milk (Light) --- */
+/* --- THEME: Cute Light (Default) --- */
 :root,
-[data-theme="strawberry"] {
-  --background: #FFF5F7;
-  --foreground: #7A2848;
+[data-theme="cute-light"] {
+  --background: #FFF8F6;
+  --foreground: #5C4033;
 
-  --bg: #FFF5F7;
+  --bg: #FFF8F6;
   --chat-bg: #FFFFFF;
-  --sidebar: #FFF0F4;
-  --primary: #C0436E;
-  --primary-hover: #D84B7C;
-  --sent-msg: #C0436E;
-  --recv-msg: #FFE5ED;
-  --text-main: #7A2848;
-  --text-secondary: #E08AAF;
-  --border: #FBBDD0;
-  --glass-bg: rgba(255, 245, 247, 0.7);
-  --glass-border: rgba(251, 189, 208, 0.5);
+  --sidebar: #FFF0EC;
+  --primary: #E8729A;
+  --primary-hover: #D4577F;
+  --sent-msg: #E8729A;
+  --sent-msg-light: rgba(232, 114, 154, 0.10);
+  --recv-msg: #FFF0EC;
+  --recv-msg-border: #F5D5CC;
+  --text-main: #5C4033;
+  --text-secondary: #C4A08E;
+  --border: #F5D5CC;
+  --glass-bg: rgba(255, 248, 246, 0.75);
+  --glass-border: rgba(245, 213, 204, 0.6);
 
   --input-bg: #FFFFFF;
+
+  /* Doodle pattern */
+  --pattern-color: #E8729A;
+  --pattern-opacity: 0.06;
 }
 
-/* --- THEME 2: Lavender Dream (Light) --- */
-[data-theme="lavender"] {
-  --background: #F4F2FD;
-  --foreground: #2E257A;
+/* --- THEME: Cute Dark --- */
+[data-theme="cute-dark"] {
+  --background: #1A1520;
+  --foreground: #F0D9E8;
 
-  --bg: #F4F2FD;
-  --chat-bg: #FFFFFF;
-  --sidebar: #EBE8F9;
-  --primary: #4B3FA0;
-  --primary-hover: #5A4EBB;
-  --sent-msg: #4B3FA0;
-  --recv-msg: #E8E4FA;
-  --text-main: #2E257A;
-  --text-secondary: #9B93D4;
-  --border: #C5BCEF;
-  --glass-bg: rgba(244, 242, 253, 0.7);
-  --glass-border: rgba(197, 188, 239, 0.5);
+  --bg: #1A1520;
+  --chat-bg: #140F18;
+  --sidebar: #1E1828;
+  --primary: #E8729A;
+  --primary-hover: #F08AB0;
+  --sent-msg: #E8729A;
+  --sent-msg-light: rgba(232, 114, 154, 0.12);
+  --recv-msg: #241D2E;
+  --recv-msg-border: #3D2F4A;
+  --text-main: #F0D9E8;
+  --text-secondary: #8B7094;
+  --border: #3D2F4A;
+  --glass-bg: rgba(26, 21, 32, 0.8);
+  --glass-border: rgba(61, 47, 74, 0.6);
 
-  --input-bg: #FFFFFF;
-}
+  --input-bg: #241D2E;
 
-/* --- THEME 3: Matcha Latte (Light) --- */
-[data-theme="matcha"] {
-  --background: #F3F8ED;
-  --foreground: #27500A;
-
-  --bg: #F3F8ED;
-  --chat-bg: #FFFFFF;
-  --sidebar: #E9F2E2;
-  --primary: #3B6D11;
-  --primary-hover: #488415;
-  --sent-msg: #3B6D11;
-  --recv-msg: #DFF0C8;
-  --text-main: #27500A;
-  --text-secondary: #7BAD4B;
-  --border: #AECE8A;
-  --glass-bg: rgba(243, 248, 237, 0.7);
-  --glass-border: rgba(174, 206, 138, 0.5);
-
-  --input-bg: #FFFFFF;
-}
-
-/* --- THEME 4: Peach Sorbet (Light) --- */
-[data-theme="peach"] {
-  --background: #FFF7F2;
-  --foreground: #712B13;
-
-  --bg: #FFF7F2;
-  --chat-bg: #FFFFFF;
-  --sidebar: #FFEEE6;
-  --primary: #993C1D;
-  --primary-hover: #B44722;
-  --sent-msg: #993C1D;
-  --recv-msg: #FAECE7;
-  --text-main: #712B13;
-  --text-secondary: #D98870;
-  --border: #F5C4B3;
-  --glass-bg: rgba(255, 247, 242, 0.7);
-  --glass-border: rgba(245, 196, 179, 0.5);
-
-  --input-bg: #FFFFFF;
-}
-
-/* --- THEME 5: Midnight Rose (Dark) --- */
-[data-theme="midnight-rose"] {
-  --background: #1E1018;
-  --foreground: #F4C0D1;
-
-  --bg: #1E1018;
-  --chat-bg: #150A10;
-  --sidebar: #170C12;
-  --primary: #C0436E;
-  --primary-hover: #D84B7C;
-  --sent-msg: #C0436E;
-  --recv-msg: #2E1525;
-  --text-main: #F4C0D1;
-  --text-secondary: #8B4C6A;
-  --border: #5C2240;
-  --glass-bg: rgba(30, 16, 24, 0.7);
-  --glass-border: rgba(92, 34, 64, 0.5);
-
-  --input-bg: #2E1525;
-}
-
-/* --- THEME 6: Galaxy Dust (Dark) --- */
-[data-theme="galaxy-dust"] {
-  --background: #100E1E;
-  --foreground: #CECBF6;
-
-  --bg: #100E1E;
-  --chat-bg: #0A0914;
-  --sidebar: #0C0B18;
-  --primary: #7F77DD;
-  --primary-hover: #968FFA;
-  --sent-msg: #7F77DD;
-  --recv-msg: #1C1830;
-  --text-main: #CECBF6;
-  --text-secondary: #534AB7;
-  --border: #3C3489;
-  --glass-bg: rgba(16, 14, 30, 0.7);
-  --glass-border: rgba(60, 52, 137, 0.5);
-
-  --input-bg: #1C1830;
-}
-
-/* --- THEME 7: Forest Night (Dark) --- */
-[data-theme="forest-night"] {
-  --background: #0B1409;
-  --foreground: #C0DD97;
-
-  --bg: #0B1409;
-  --chat-bg: #060A04;
-  --sidebar: #080E06;
-  --primary: #639922;
-  --primary-hover: #76B429;
-  --sent-msg: #639922;
-  --recv-msg: #141F0E;
-  --text-main: #C0DD97;
-  --text-secondary: #3B6D11;
-  --border: #27500A;
-  --glass-bg: rgba(11, 20, 9, 0.7);
-  --glass-border: rgba(39, 80, 10, 0.5);
-
-  --input-bg: #141F0E;
-}
-
-/* --- THEME 8: Ember Glow (Dark) --- */
-[data-theme="ember-glow"] {
-  --background: #180D08;
-  --foreground: #F5C4B3;
-
-  --bg: #180D08;
-  --chat-bg: #0F0805;
-  --sidebar: #130A06;
-  --primary: #D85A30;
-  --primary-hover: #F06536;
-  --sent-msg: #D85A30;
-  --recv-msg: #261009;
-  --text-main: #F5C4B3;
-  --text-secondary: #993C1D;
-  --border: #712B13;
-  --glass-bg: rgba(24, 13, 8, 0.7);
-  --glass-border: rgba(113, 43, 19, 0.5);
-
-  --input-bg: #261009;
-}
-
-/* --- THEME 9: Clean Light (Light) --- */
-[data-theme="clean-light"] {
-  --background: #FFFFFF;
-  --foreground: #111111;
-
-  --bg: #FFFFFF;
-  --chat-bg: #FAFAFA;
-  --sidebar: #F7F7F7;
-  --primary: #1A73E8;
-  --primary-hover: #2684FA;
-  --sent-msg: #1A73E8;
-  --recv-msg: #F2F2F2;
-  --text-main: #111111;
-  --text-secondary: #AAAAAA;
-  --border: #E0E0E0;
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(224, 224, 224, 0.5);
-
-  --input-bg: #F7F7F7;
-}
-
-/* --- THEME 10: Clean Dark (Dark) --- */
-[data-theme="clean-dark"] {
-  --background: #141414;
-  --foreground: #E8E8E8;
-
-  --bg: #141414;
-  --chat-bg: #0F0F0F;
-  --sidebar: #1A1A1A;
-  --primary: #3B82F6;
-  --primary-hover: #60A5FA;
-  --sent-msg: #3B82F6;
-  --recv-msg: #222222;
-  --text-main: #E8E8E8;
-  --text-secondary: #555555;
-  --border: #2E2E2E;
-  --glass-bg: rgba(20, 20, 20, 0.7);
-  --glass-border: rgba(46, 46, 46, 0.5);
-
-  --input-bg: #1E1E1E;
+  /* Doodle pattern */
+  --pattern-color: #E8729A;
+  --pattern-opacity: 0.04;
 }
 
 @theme inline {
@@ -220,191 +64,93 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-sent-msg: var(--sent-msg);
+  --color-sent-msg-light: var(--sent-msg-light);
   --color-recv-msg: var(--recv-msg);
+  --color-recv-msg-border: var(--recv-msg-border);
   --color-text-main: var(--text-main);
   --color-text-secondary: var(--text-secondary);
   --color-border: var(--border);
   --color-glass-bg: var(--glass-bg);
   --color-glass-border: var(--glass-border);
   --color-input-bg: var(--input-bg);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
 }
 
+/* ===== BASE STYLES ===== */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  font-family: var(--font-nunito), 'Nunito', system-ui, -apple-system, sans-serif;
   margin: 0;
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow-x: hidden;
 }
 
-/* --- DOODLE MODE STYLES --- */
+/* ===== CUTE DOODLE STYLES (Always Active) ===== */
 body[data-doodle="true"] {
-  font-family: var(--font-patrick-hand), cursive;
+  font-family: var(--font-nunito), 'Nunito', system-ui, sans-serif;
 }
 
-body[data-doodle="true"] * {
-  border-color: var(--border) !important;
-}
-
+/* Soft dashed borders for interactive elements */
 body[data-doodle="true"] .doodle-border {
-  border: 2px solid var(--border);
-  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  border: 2px dashed var(--border);
+  border-radius: 20px;
 }
 
 body[data-doodle="true"] .doodle-shadow {
-  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.1);
+  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.04);
 }
 
-body[data-doodle="true"] button:not(.no-doodle),
-body[data-doodle="true"] input:not(.no-doodle),
-body[data-doodle="true"] .doodle-card {
-  border: 2px solid var(--border);
-  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
-  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+body[data-doodle="true"] input:not(.no-doodle) {
+  border: 2px dashed var(--border) !important;
+  border-radius: 16px !important;
+}
+
+body[data-doodle="true"] button:not(.no-doodle) {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 body[data-doodle="true"] button:hover:not(.no-doodle) {
-  transform: translate(-1px, -1px);
-  box-shadow: 5px 5px 0 0 rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
-/* Notebook background patterns for Doodle Mode */
+body[data-doodle="true"] button:active:not(.no-doodle) {
+  transform: translateY(0px) scale(0.98);
+}
+
+/* Notebook background pattern */
 body[data-doodle="true"]::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: -10;
-  opacity: 0.08;
+  background-image:
+    radial-gradient(circle, var(--pattern-color) 0.5px, transparent 0.5px);
+  background-size: 20px 20px;
+  opacity: var(--pattern-opacity);
 }
 
-/* Theme-specific patterns */
-[data-theme="strawberry"][data-doodle="true"]::before { background: radial-gradient(#C0436E 0.5px, transparent 0.5px); background-size: 24px 24px; }
-[data-theme="lavender"][data-doodle="true"]::before { background: radial-gradient(#4B3FA0 0.5px, transparent 0.5px); background-size: 20px 20px; }
-[data-theme="matcha"][data-doodle="true"]::before { background: linear-gradient(to right, #AECE8A 1px, transparent 1px), linear-gradient(to bottom, #AECE8A 1px, transparent 1px); background-size: 30px 30px; }
-[data-theme="peach"][data-doodle="true"]::before { background: radial-gradient(#993C1D 1px, transparent 1px); background-size: 28px 28px; }
-[data-theme="midnight-rose"][data-doodle="true"]::before { background: radial-gradient(#C0436E 0.5px, transparent 0.5px); background-size: 15px 15px; opacity: 0.15; }
-[data-theme="galaxy-dust"][data-doodle="true"]::before { background: radial-gradient(#7F77DD 0.5px, transparent 0.5px); background-size: 10px 10px; opacity: 0.1; }
-[data-theme="forest-night"][data-doodle="true"]::before { background: linear-gradient(to right, #27500A 1px, transparent 1px), linear-gradient(to bottom, #27500A 1px, transparent 1px); background-size: 25px 25px; opacity: 0.2; }
-[data-theme="ember-glow"][data-doodle="true"]::before { background: radial-gradient(#D85A30 1px, transparent 1px); background-size: 32px 32px; opacity: 0.15; }
-[data-theme="clean-light"][data-doodle="true"]::before { background: linear-gradient(to bottom, #E0E0E0 1px, transparent 1px); background-size: 100% 24px; }
-[data-theme="clean-dark"][data-doodle="true"]::before { background: linear-gradient(to bottom, #2E2E2E 1px, transparent 1px); background-size: 100% 24px; opacity: 0.3; }
+/* ===== CUTE CHAT BUBBLES ===== */
 
-/* Highlight lines for clean themes to look like ruled paper */
-[data-theme^="clean"][data-doodle="true"]::before {
-  background-image: linear-gradient(var(--border) 1px, transparent 1px);
-  background-size: 100% 2.5rem;
+/* Sent message: light pastel + dashed border */
+.bubble-cute-me {
+  background: var(--sent-msg-light);
+  border: 2px dashed var(--primary);
+  border-radius: 20px 20px 6px 20px;
+  color: var(--text-main);
 }
 
-/* Wobbly Animation */
-@keyframes wobbly {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(-1deg); }
-  75% { transform: rotate(1deg); }
-  100% { transform: rotate(0deg); }
+/* Received message: soft bg + dashed border */
+.bubble-cute-other {
+  background: var(--recv-msg);
+  border: 2px dashed var(--recv-msg-border);
+  border-radius: 20px 20px 20px 6px;
+  color: var(--text-main);
 }
 
-body[data-doodle="true"] .animate-wobbly {
-  animation: wobbly 0.5s infinite ease-in-out;
-}
-
-/* Themed Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 10px;
-  opacity: 0.4;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-hover);
-}
-
-/* Blob animation for login page */
-@keyframes blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-  }
-
-  33% {
-    transform: translate(30px, -50px) scale(1.1);
-  }
-
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
-  }
-
-  100% {
-    transform: translate(0px, 0px) scale(1);
-  }
-}
-
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-@keyframes bounce-slow {
-
-  0%,
-  100% {
-    transform: translateY(-5%) rotate(6deg);
-    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-  }
-
-  50% {
-    transform: translateY(0) rotate(6deg);
-    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-  }
-}
-
-.animate-bounce-slow {
-  animation: bounce-slow 3s infinite;
-}
-
-@layer utilities {
-  .animate-in {
-    animation-duration: 0.5s;
-    animation-fill-mode: forwards;
-  }
-
-  .fade-in {
-    animation-name: fade-in;
-  }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Message Bubble Tails */
+/* Legacy bubble tails — keep for non-doodle fallback */
 .bubble-tail-me {
   position: relative;
   border-bottom-right-radius: 4px !important;
@@ -439,6 +185,87 @@ body[data-doodle="true"] .animate-wobbly {
   z-index: -1;
 }
 
+/* ===== THEMED SCROLLBAR ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+  opacity: 0.4;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover);
+}
+
+/* ===== ANIMATIONS ===== */
+
+/* Blob animation for login page */
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Slow bounce for landing */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-5%) rotate(6deg);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0) rotate(6deg);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+/* Fade in */
+@layer utilities {
+  .animate-in {
+    animation-duration: 0.4s;
+    animation-fill-mode: forwards;
+  }
+
+  .fade-in {
+    animation-name: fade-in;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Pulsing green dot for online status */
 @keyframes pulse-dot-green {
   0%, 100% {
@@ -451,6 +278,22 @@ body[data-doodle="true"] .animate-wobbly {
 
 .animate-pulse-dot {
   animation: pulse-dot-green 2s ease-in-out infinite;
+}
+
+/* Message pop-in animation */
+@keyframes msg-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-msg-pop {
+  animation: msg-pop 0.25s ease-out forwards;
 }
 
 /* Slide up animation */
@@ -483,4 +326,27 @@ body[data-doodle="true"] .animate-wobbly {
 
 .slide-in-from-top-2 {
   animation-name: slide-in-from-top;
+}
+
+/* Wobbly Animation (subtle) */
+@keyframes wobbly {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-2deg); }
+  75% { transform: rotate(2deg); }
+  100% { transform: rotate(0deg); }
+}
+
+body[data-doodle="true"] .animate-wobbly {
+  animation: wobbly 0.4s ease-in-out;
+}
+
+/* Cute jiggle on hover */
+@keyframes jiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-1deg); }
+  75% { transform: rotate(1deg); }
+}
+
+.hover-jiggle:hover {
+  animation: jiggle 0.3s ease-in-out;
 }

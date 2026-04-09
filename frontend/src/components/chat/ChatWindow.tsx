@@ -160,7 +160,7 @@ const MessageItem = memo(({
   const swipeProgress = Math.min(swipeX / SWIPE_THRESHOLD, 1);
 
   return (
-    <div key={msg.id} id={`msg-${msg.id}`} className={`flex flex-col ${isMe ? "items-end" : "items-start"} relative group transition-colors duration-500 ${isHighlighted ? "bg-[var(--color-primary)]/5 rounded-xl -mx-2 px-2" : ""}`}>
+    <div key={msg.id} id={`msg-${msg.id}`} className={`flex flex-col ${isMe ? "items-end" : "items-start"} relative group transition-colors duration-500 animate-msg-pop ${isHighlighted ? "bg-[var(--color-primary)]/5 rounded-xl -mx-2 px-2" : ""}`}>
       {showTime && (
         <div className="flex items-center gap-3 my-4 self-center w-full max-w-xs">
           <div className="flex-1 h-px bg-[var(--color-border)]/50"></div>
@@ -230,17 +230,17 @@ const MessageItem = memo(({
           )}
 
           <div
-            className={`w-fit max-w-[75%] md:max-w-[70%] transition-all duration-300 ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3 rounded-[1.25rem] md:rounded-[1.5rem]"} ${msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
+            className={`w-fit max-w-[75%] md:max-w-[70%] transition-all duration-300 ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3"} ${msg.isDeleted ? "bg-transparent border-2 border-dashed border-[var(--color-border)] rounded-[20px] text-[var(--color-text-secondary)] italic" :
               isEmojiOnly ? "bg-transparent shadow-none" :
                 isMe
-                  ? `bg-[var(--color-primary)] text-[var(--color-background)] shadow-[0_2px_10px_-4px_var(--color-primary)] ${isDoodleMode ? 'doodle-border' : 'bubble-tail-me'}`
-                  : `bg-[var(--color-glass-bg)] backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] shadow-sm ${isDoodleMode ? 'doodle-border' : 'bubble-tail-other'}`
+                  ? 'bubble-cute-me'
+                  : 'bubble-cute-other'
               }`}
           >
             {msg.replyTo && !msg.isDeleted && (
               <div
                 onClick={() => scrollToMessage(msg.replyTo!.id)}
-                className={`text-xs p-2 rounded-lg mb-2 opacity-80 border-l-2 cursor-pointer hover:opacity-100 transition-opacity ${isMe ? "bg-white/20 border-white/40" : "bg-[var(--color-border)] border-[var(--color-primary)]"} truncate`}
+                className={`text-xs p-2 rounded-lg mb-2 opacity-80 border-l-2 cursor-pointer hover:opacity-100 transition-opacity ${isMe ? "bg-[var(--color-primary)]/10 border-[var(--color-primary)]" : "bg-[var(--color-border)]/30 border-[var(--color-primary)]"} truncate`}
               >
                 <span className="font-semibold block">{msg.replyTo.sender.id === currentUser?.id ? 'You' : currentActiveUser.name}</span>
                 {msg.replyTo.content}
@@ -252,15 +252,15 @@ const MessageItem = memo(({
             )}
 
             {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
-              <a href={`${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className={`group flex items-center space-x-3 p-3 rounded-2xl mb-2 backdrop-blur-md border transition-all hover:scale-[1.02] ${isMe ? 'bg-white/10 border-white/20 text-white hover:bg-white/20' : 'bg-[var(--color-glass-bg)] border-[var(--color-glass-border)] text-[var(--color-text-main)] shadow-sm hover:bg-[var(--color-bg)]/50'} no-underline`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isMe ? 'bg-white/20' : 'bg-[var(--color-primary)]/10'}`}>
-                  <FileIcon className={`w-5 h-5 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
+              <a href={`${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className="group flex items-center space-x-3 p-3 rounded-2xl mb-2 border-2 border-dashed border-[var(--color-border)] transition-all hover:scale-[1.02] text-[var(--color-text-main)] hover:bg-[var(--color-bg)]/50 no-underline">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[var(--color-primary)]/10">
+                  <FileIcon className="w-5 h-5 text-[var(--color-primary)]" />
                 </div>
                 <div className="flex flex-col overflow-hidden">
                   <span className="text-sm font-semibold truncate max-w-[150px] leading-tight">{msg.content}</span>
-                  <span className={`text-[10px] mt-0.5 ${isMe ? 'text-white/70' : 'text-[var(--color-text-secondary)]'}`}>Click to download</span>
+                  <span className="text-[10px] mt-0.5 text-[var(--color-text-secondary)]">Click to download</span>
                 </div>
-                <Download className={`w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity shrink-0 ${isMe ? 'text-white' : 'text-[var(--color-primary)]'}`} />
+                <Download className="w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity shrink-0 text-[var(--color-primary)]" />
               </a>
             )}
 
@@ -282,16 +282,16 @@ const MessageItem = memo(({
               </div>
             )}
 
-            <div className={`flex items-center justify-end mt-1 space-x-1 ${msg.isDeleted ? "text-[var(--color-text-secondary)]" : (isEmojiOnly || !isMe) ? "text-[var(--color-text-secondary)]" : "text-blue-100"}`}>
+            <div className={`flex items-center justify-end mt-1 space-x-1 ${msg.isDeleted ? "text-[var(--color-text-secondary)]" : "text-[var(--color-text-secondary)]"}`}>
               {msg.isEdited && !msg.isDeleted && <span className="text-[10px] italic mr-1">edited</span>}
               <span className="text-[10px] opacity-80">
                 {format(new Date(msg.createdAt), "h:mm a")}
               </span>
               {isMe && !msg.isDeleted && (
                 <span className="text-xs ml-1 flex items-center font-bold">
-                  {msg.status === "SENT" && <Check className="w-3.5 h-3.5 opacity-60" />}
-                  {msg.status === "DELIVERED" && <CheckCheck className="w-3.5 h-3.5 opacity-60" />}
-                  {msg.status === "SEEN" && <CheckCheck className="w-3.5 h-3.5 text-cyan-300 opacity-100 drop-shadow-[0_0_2px_rgba(103,232,249,0.8)]" />}
+                  {msg.status === "SENT" && <Check className="w-3.5 h-3.5 opacity-40" />}
+                  {msg.status === "DELIVERED" && <CheckCheck className="w-3.5 h-3.5 opacity-40" />}
+                  {msg.status === "SEEN" && <CheckCheck className="w-3.5 h-3.5 text-[var(--color-primary)] opacity-100" />}
                 </span>
               )}
             </div>
@@ -1038,9 +1038,9 @@ export default function ChatWindow({
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative bg-gradient-to-br from-[var(--color-bg)] to-[var(--color-sidebar)]">
+    <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-10 md:p-6 md:pt-12 border-b border-[var(--color-glass-border)] bg-[var(--color-glass-bg)] backdrop-blur-xl shadow-sm z-20 sticky top-0">
+      <div className="flex items-center justify-between p-4 pt-10 md:p-6 md:pt-12 border-b-2 border-dashed border-[var(--color-border)] bg-[var(--color-sidebar)] z-20 sticky top-0">
         <div className="flex items-center space-x-2 md:space-x-3">
           {onBack && (
             <button
@@ -1074,7 +1074,7 @@ export default function ChatWindow({
 
         <div className="flex items-center space-x-2">
           {isSearching ? (
-            <form onSubmit={handleSearch} className="flex items-center bg-[var(--color-bg)] rounded-full px-3 py-1 border border-[var(--color-primary)] transition-all">
+            <form onSubmit={handleSearch} className="flex items-center bg-[var(--color-bg)] rounded-full px-3 py-1 border-2 border-dashed border-[var(--color-primary)] transition-all">
               <input
                 type="text"
                 autoFocus
@@ -1096,7 +1096,7 @@ export default function ChatWindow({
               <MoreVertical className="w-5 h-5" />
             </button>
             {showHeaderMenu && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl shadow-lg py-2 z-50">
+              <div className="absolute top-full right-0 mt-2 w-48 bg-[var(--color-bg)] border-2 border-dashed border-[var(--color-border)] rounded-[16px] shadow-lg py-2 z-50">
                 <button className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-main)] hover:bg-[var(--color-chat-bg)]">Contact Info</button>
                 <button className="w-full text-left px-4 py-2 text-sm text-[var(--color-text-main)] hover:bg-[var(--color-chat-bg)]">Mute Notifications</button>
                 <div className="h-px bg-[var(--color-border)] my-1"></div>
@@ -1168,7 +1168,7 @@ export default function ChatWindow({
         <div className="absolute bottom-32 right-8 z-30">
           <button
             onClick={scrollToBottom}
-            className="w-10 h-10 bg-[var(--color-glass-bg)] backdrop-blur-xl border border-[var(--color-glass-border)] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-background)]"
+            className="no-doodle w-10 h-10 bg-[var(--color-sidebar)] border-2 border-dashed border-[var(--color-border)] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white hover:border-[var(--color-primary)]"
           >
             <ArrowDown className="w-5 h-5" />
           </button>
@@ -1207,7 +1207,7 @@ export default function ChatWindow({
       {/* Delete Confirmation Modal */}
       {messageToDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--color-chat-bg)] p-6 rounded-2xl shadow-2xl max-w-sm w-full mx-4 border border-[var(--color-border)] animate-in fade-in zoom-in duration-200">
+          <div className="bg-[var(--color-sidebar)] p-6 rounded-[20px] shadow-2xl max-w-sm w-full mx-4 border-2 border-dashed border-[var(--color-border)] animate-in fade-in">
             <h3 className="text-xl font-bold text-[var(--color-text-main)] mb-2">Delete Message?</h3>
             <p className="text-[var(--color-text-secondary)] mb-6">Are you sure you want to delete this message? This action cannot be undone.</p>
             <div className="flex justify-end space-x-3">

@@ -61,6 +61,21 @@ async function startServer() {
     const PORT = process.env.PORT || 4000;
     server.listen(PORT, () => {
       console.log(`✅ Server is successfully running on port ${PORT}`);
+
+      // Keep-alive self-ping for Render free tier (prevents 15-min idle spindown)
+      const RENDER_URL = process.env.RENDER_EXTERNAL_URL;
+      if (RENDER_URL) {
+        const PING_INTERVAL = 14 * 60 * 1000; // 14 minutes
+        setInterval(async () => {
+          try {
+            const res = await fetch(`${RENDER_URL}/health`);
+            console.log(`♻️ Keep-alive ping: ${res.status} at ${new Date().toISOString()}`);
+          } catch (err) {
+            console.error("♻️ Keep-alive ping failed:", err);
+          }
+        }, PING_INTERVAL);
+        console.log("♻️ Keep-alive self-ping enabled (every 14 min)");
+      }
     });
   } catch (error) {
     console.error("❌ CRITICAL: Server failed to start:", error);

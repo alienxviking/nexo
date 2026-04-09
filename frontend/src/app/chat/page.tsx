@@ -43,7 +43,7 @@ export default function ChatPage() {
 
   if (isLoading || !token || !user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[var(--color-bg)] to-indigo-500/5 text-[var(--color-text-main)]">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-bg)] text-[var(--color-text-main)]">
         <div className="relative mb-8">
           <div className="absolute inset-0 bg-[var(--color-primary)] opacity-20 blur-3xl rounded-full animate-pulse"></div>
           <div className="relative w-20 h-20 bg-[var(--color-primary)] rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-[var(--color-primary)]/40 rotate-3 animate-bounce-slow">
@@ -74,10 +74,10 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-gradient-to-br from-[var(--color-bg)] to-indigo-500/5 overflow-hidden overflow-x-hidden md:p-3 md:gap-3">
+    <div className="h-[100dvh] w-full flex flex-col md:flex-row bg-[var(--color-bg)] overflow-hidden overflow-x-hidden md:p-3 md:gap-3">
       {/* Navigation Rail - Desktop */}
-      <div className="hidden md:flex w-20 bg-[var(--color-glass-bg)] backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex-col items-center py-8 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.1)] z-40 transition-colors duration-300 rounded-[2.5rem]">
-        <div className="w-12 h-12 bg-[var(--color-primary)] rounded-[1.25rem] flex items-center justify-center text-[var(--color-background)] font-black text-2xl mb-10 shadow-lg rotate-3 transition-all hover:rotate-12 hover:scale-110 cursor-pointer" style={{ boxShadow: '0 8px 20px -6px var(--color-primary)' }}>
+      <div className="hidden md:flex w-20 bg-[var(--color-sidebar)] border-2 border-dashed border-[var(--color-border)] flex-col items-center py-8 z-40 transition-colors duration-300 rounded-[20px]">
+        <div className="w-12 h-12 bg-[var(--color-primary)] rounded-[14px] flex items-center justify-center text-white font-black text-2xl mb-10 shadow-lg rotate-3 transition-all hover:rotate-12 hover:scale-110 cursor-pointer hover-jiggle" style={{ boxShadow: '0 8px 20px -6px var(--color-primary)' }}>
           N
         </div>
 
@@ -86,16 +86,16 @@ export default function ChatPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative w-12 h-12 flex items-center justify-center rounded-[1.25rem] transition-all hover:scale-110 active:scale-95 ${activeTab === tab
+              className={`no-doodle relative w-12 h-12 flex flex-col items-center justify-center rounded-[14px] transition-all hover:scale-110 active:scale-95 ${activeTab === tab
                   ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)] shadow-sm"
                   : "text-[var(--color-text-secondary)] hover:bg-[var(--color-chat-bg)]"
                 }`}
               title={label}
             >
-              {activeTab === tab && (
-                <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[var(--color-primary)] rounded-r-full animate-in slide-in-from-left-2 duration-300"></div>
-              )}
               <Icon className="w-6 h-6" />
+              {activeTab === tab && (
+                <div className="absolute -bottom-1.5 w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full"></div>
+              )}
             </button>
           ))}
         </div>
@@ -105,7 +105,7 @@ export default function ChatPage() {
 
           <button
             onClick={handleLogout}
-            className="p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors mt-auto"
+            className="no-doodle p-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-[14px] transition-colors mt-auto"
             title="Logout"
           >
             <LogOut className="w-6 h-6" />
@@ -114,7 +114,7 @@ export default function ChatPage() {
       </div>
 
       {/* Side Panel — switches based on active tab */}
-      <div className={`flex-1 md:flex-none md:w-80 h-full ${showChat ? 'hidden md:block' : 'block md:block'} rounded-none md:rounded-[2.5rem] overflow-hidden border-b md:border border-[var(--color-glass-border)] shadow-xl transition-all duration-300`}>
+      <div className={`flex-1 md:flex-none md:w-80 h-full ${showChat ? 'hidden md:block' : 'block md:block'} rounded-none md:rounded-[20px] overflow-hidden border-b md:border-2 md:border-dashed border-[var(--color-border)] shadow-sm transition-all duration-300`}>
         {activeTab === "chats" && (
           <Sidebar
             onSelectConversation={handleSelectConversation}
@@ -132,7 +132,7 @@ export default function ChatPage() {
       </div>
 
       {/* Chat Window */}
-      <div className={`flex-1 h-full ${!showChat ? 'hidden md:block' : 'block md:block'} rounded-none md:rounded-[2.5rem] overflow-hidden border-b md:border border-[var(--color-glass-border)] shadow-xl transition-all duration-300`}>
+      <div className={`flex-1 h-full ${!showChat ? 'hidden md:block' : 'block md:block'} rounded-none md:rounded-[20px] overflow-hidden border-b md:border-2 md:border-dashed border-[var(--color-border)] shadow-sm transition-all duration-300`}>
         {activeUser && activeConversationId ? (
           <ChatWindow
             conversationId={activeConversationId as string}
@@ -164,7 +164,7 @@ export default function ChatPage() {
 
       {/* Bottom Nav - Mobile */}
       {!showChat && (
-        <div className="md:hidden flex-none flex bg-[var(--color-glass-bg)] backdrop-blur-3xl border-t border-[var(--color-glass-border)] p-4 pb-8 items-center justify-around z-50">
+        <div className="md:hidden flex-none flex bg-[var(--color-sidebar)] border-t-2 border-dashed border-[var(--color-border)] p-4 pb-8 items-center justify-around z-50">
           {navItems.map(({ tab, icon: Icon, label }) => (
             <button
               key={tab}

@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Sparkles, Shield, Zap, Pencil, Loader2 } from "lucide-react";
+import { MessageSquare, Sparkles, Shield, Zap, Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/config";
 import { useDoodle } from "@/context/DoodleContext";
 
 export default function AuthPage() {
-  const { isDoodleMode, toggleDoodleMode } = useDoodle();
+  const { isDoodleMode } = useDoodle();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -51,16 +51,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex bg-[var(--color-bg)] relative overflow-hidden">
-      {/* Doodle Mode Toggle (Persistent) */}
-      <button 
-        onClick={toggleDoodleMode}
-        type="button"
-        className={`absolute top-6 right-6 z-50 p-4 transition-all hover:scale-110 active:scale-95 group ${isDoodleMode ? 'bg-orange-500 text-white doodle-border rotate-3 shadow-lg' : 'bg-[var(--color-glass-bg)] text-[var(--color-text-secondary)] rounded-2xl border border-[var(--color-glass-border)] shadow-sm'}`}
-        title="Toggle Doodle Mode"
-      >
-        <Pencil className={`w-6 h-6 ${isDoodleMode ? 'animate-wobbly' : 'group-hover:rotate-12 transition-transform'}`} />
-      </button>
-
       {/* Animated background blobs */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[var(--color-primary)]/15 rounded-full mix-blend-multiply filter blur-[80px] animate-blob"></div>
       <div className="absolute top-[30%] right-[-5%] w-[400px] h-[400px] bg-[var(--color-primary-hover)]/15 rounded-full mix-blend-multiply filter blur-[80px] animate-blob animation-delay-2000"></div>
