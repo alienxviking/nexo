@@ -25,7 +25,7 @@
 
   /* Doodle pattern */
   --pattern-color: #E8729A;
-  --pattern-opacity: 0.15;
+  --pattern-opacity: 0.3;
 }
 
 /* --- THEME: Cute Dark --- */
@@ -52,7 +52,7 @@
 
   /* Doodle pattern */
   --pattern-color: #F08AB0;
-  --pattern-opacity: 0.12;
+  --pattern-opacity: 0.25;
 }
 
 @theme inline {
@@ -119,18 +119,16 @@ body[data-doodle="true"] button:active:not(.no-doodle) {
   transform: translateY(0px) scale(0.98);
 }
 
-/* Cute SVG Stars and Dots Pattern (Exclusive to ChatWindow) */
+/* Cute Dotted Notebook Pattern (Exclusive to ChatWindow) */
 .doodle-chat-bg::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background-color: var(--pattern-color);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='black' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3Ccircle cx='20' cy='20' r='1.5'/%3E%3Ccircle cx='50' cy='50' r='1.5'/%3E%3Ccircle cx='20' cy='50' r='1.5'/%3E%3Ccircle cx='50' cy='20' r='1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='black' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3Ccircle cx='20' cy='20' r='1.5'/%3E%3Ccircle cx='50' cy='50' r='1.5'/%3E%3Ccircle cx='20' cy='50' r='1.5'/%3E%3Ccircle cx='50' cy='20' r='1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  -webkit-mask-size: 160px 160px;
-  mask-size: 160px 160px;
+  background-image: radial-gradient(var(--pattern-color) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+  background-position: center;
   opacity: var(--pattern-opacity);
 }
 
