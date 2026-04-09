@@ -240,6 +240,78 @@ body {
   overflow-x: hidden;
 }
 
+/* --- DOODLE MODE STYLES --- */
+body[data-doodle="true"] {
+  font-family: var(--font-patrick-hand), cursive;
+}
+
+body[data-doodle="true"] * {
+  border-color: var(--border) !important;
+}
+
+body[data-doodle="true"] .doodle-border {
+  border: 2px solid var(--border);
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+}
+
+body[data-doodle="true"] .doodle-shadow {
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.1);
+}
+
+body[data-doodle="true"] button:not(.no-doodle),
+body[data-doodle="true"] input:not(.no-doodle),
+body[data-doodle="true"] .doodle-card {
+  border: 2px solid var(--border);
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  box-shadow: 3px 3px 0 0 rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+body[data-doodle="true"] button:hover:not(.no-doodle) {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Notebook background patterns for Doodle Mode */
+body[data-doodle="true"]::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -10;
+  opacity: 0.08;
+}
+
+/* Theme-specific patterns */
+[data-theme="strawberry"][data-doodle="true"]::before { background: radial-gradient(#C0436E 0.5px, transparent 0.5px); background-size: 24px 24px; }
+[data-theme="lavender"][data-doodle="true"]::before { background: radial-gradient(#4B3FA0 0.5px, transparent 0.5px); background-size: 20px 20px; }
+[data-theme="matcha"][data-doodle="true"]::before { background: linear-gradient(to right, #AECE8A 1px, transparent 1px), linear-gradient(to bottom, #AECE8A 1px, transparent 1px); background-size: 30px 30px; }
+[data-theme="peach"][data-doodle="true"]::before { background: radial-gradient(#993C1D 1px, transparent 1px); background-size: 28px 28px; }
+[data-theme="midnight-rose"][data-doodle="true"]::before { background: radial-gradient(#C0436E 0.5px, transparent 0.5px); background-size: 15px 15px; opacity: 0.15; }
+[data-theme="galaxy-dust"][data-doodle="true"]::before { background: radial-gradient(#7F77DD 0.5px, transparent 0.5px); background-size: 10px 10px; opacity: 0.1; }
+[data-theme="forest-night"][data-doodle="true"]::before { background: linear-gradient(to right, #27500A 1px, transparent 1px), linear-gradient(to bottom, #27500A 1px, transparent 1px); background-size: 25px 25px; opacity: 0.2; }
+[data-theme="ember-glow"][data-doodle="true"]::before { background: radial-gradient(#D85A30 1px, transparent 1px); background-size: 32px 32px; opacity: 0.15; }
+[data-theme="clean-light"][data-doodle="true"]::before { background: linear-gradient(to bottom, #E0E0E0 1px, transparent 1px); background-size: 100% 24px; }
+[data-theme="clean-dark"][data-doodle="true"]::before { background: linear-gradient(to bottom, #2E2E2E 1px, transparent 1px); background-size: 100% 24px; opacity: 0.3; }
+
+/* Highlight lines for clean themes to look like ruled paper */
+[data-theme^="clean"][data-doodle="true"]::before {
+  background-image: linear-gradient(var(--border) 1px, transparent 1px);
+  background-size: 100% 2.5rem;
+}
+
+/* Wobbly Animation */
+@keyframes wobbly {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-1deg); }
+  75% { transform: rotate(1deg); }
+  100% { transform: rotate(0deg); }
+}
+
+body[data-doodle="true"] .animate-wobbly {
+  animation: wobbly 0.5s infinite ease-in-out;
+}
+
 /* Themed Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Play, Pause, Mic } from "lucide-react";
+import { useDoodle } from "@/context/DoodleContext";
 
 export default function VoicePlayer({
   src,
@@ -10,6 +11,7 @@ export default function VoicePlayer({
   src: string;
   isMe: boolean;
 }) {
+  const { isDoodleMode } = useDoodle();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -81,9 +83,9 @@ export default function VoicePlayer({
           isMe
             ? "bg-white/20 text-white hover:bg-white/30"
             : "bg-[var(--color-primary)]/15 text-[var(--color-primary)] hover:bg-[var(--color-primary)]/25"
-        }`}
+        } ${isDoodleMode ? 'doodle-border' : ''}`}
       >
-        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className={`w-4 h-4 ml-0.5 ${isDoodleMode && isPlaying ? 'animate-wobbly' : ''}`} />}
       </button>
 
       {/* Waveform + time */}
@@ -102,7 +104,7 @@ export default function VoicePlayer({
                   isPlayedPast
                     ? isMe ? "bg-white" : "bg-[var(--color-primary)]"
                     : isMe ? "bg-white/30" : "bg-[var(--color-primary)]/20"
-                }`}
+                } ${isDoodleMode ? 'hover:animate-wobbly' : ''}`}
                 style={{ height: `${height}%` }}
               />
             );

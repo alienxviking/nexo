@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "next-themes";
 import ThemeSwitcher from "./ThemeSwitcher";
+import { useDoodle } from "@/context/DoodleContext";
 import { getAvatarGradient } from "@/lib/avatarGradients";
-import { LogOut, Palette, User, Bell, Shield, ChevronRight } from "lucide-react";
+import { LogOut, Palette, User, Bell, Shield, ChevronRight, Pencil } from "lucide-react";
 
 export default function SettingsPanel({
   onLogout
@@ -14,6 +15,7 @@ export default function SettingsPanel({
 }) {
   const { user: currentUser } = useAuth();
   const { theme } = useTheme();
+  const { isDoodleMode, toggleDoodleMode } = useDoodle();
   const [notifications, setNotifications] = useState(true);
 
   return (
@@ -48,6 +50,23 @@ export default function SettingsPanel({
             </div>
             <div className="flex justify-center">
               <ThemeSwitcher />
+            </div>
+          </div>
+
+          {/* Doodle Mode Toggle */}
+          <div
+            onClick={toggleDoodleMode}
+            className="flex items-center gap-3 p-4 bg-[var(--color-glass-bg)] backdrop-blur-xl border border-[var(--color-glass-border)] rounded-[2rem] cursor-pointer hover:scale-[1.01] transition-all"
+          >
+            <div className="w-10 h-10 rounded-[1rem] bg-orange-500/10 flex items-center justify-center">
+              <Pencil className="w-5 h-5 text-orange-500" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-[var(--color-text-main)]">Doodle Mode</p>
+              <p className="text-xs text-[var(--color-text-secondary)]">Playful hand-drawn theme</p>
+            </div>
+            <div className={`w-11 h-6 rounded-full transition-colors duration-300 flex items-center px-0.5 ${isDoodleMode ? 'bg-orange-500' : 'bg-[var(--color-border)]'}`}>
+              <div className={`w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${isDoodleMode ? 'translate-x-5' : 'translate-x-0'}`}></div>
             </div>
           </div>
 

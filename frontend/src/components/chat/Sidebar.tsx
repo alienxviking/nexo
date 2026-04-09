@@ -6,6 +6,7 @@ import { useSocket } from "@/context/SocketContext";
 import { Search, MessageSquare, X } from "lucide-react";
 import { getAvatarGradient } from "@/lib/avatarGradients";
 import { API_URL } from "@/lib/config";
+import { useDoodle } from "@/context/DoodleContext";
 
 interface User {
   id: string;
@@ -37,6 +38,7 @@ export default function Sidebar({
 }) {
   const { token, user: currentUser } = useAuth();
   const { socket } = useSocket();
+  const { isDoodleMode } = useDoodle();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -236,9 +238,9 @@ export default function Sidebar({
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-[var(--color-bg)]/80 backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 shadow-inner transition-all placeholder:text-[var(--color-text-secondary)]/70 font-medium"
+            className={`w-full pl-11 pr-4 py-2.5 bg-[var(--color-bg)]/80 backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 shadow-inner transition-all placeholder:text-[var(--color-text-secondary)]/70 font-medium ${isDoodleMode ? 'doodle-border' : ''}`}
           />
-          <Search className="absolute left-4 top-3 text-[var(--color-text-secondary)] h-4 w-4 transition-colors" />
+          <Search className={`absolute left-4 top-3 text-[var(--color-text-secondary)] h-4 w-4 transition-colors ${isDoodleMode ? 'group-hover:animate-wobbly' : ''}`} />
         </div>
       </div>
 
@@ -283,12 +285,12 @@ export default function Sidebar({
                 key={conv.id}
                 onClick={() => onSelectConversation(otherUser, conv.id)}
                 className={`flex items-center p-4 mb-2 mx-2 cursor-pointer transition-all rounded-[2rem] group ${activeId === conv.id
-                    ? "bg-[var(--color-glass-bg)] ring-1 ring-[var(--color-primary)]/20 shadow-md scale-[1.02]"
+                    ? isDoodleMode ? "bg-[var(--color-glass-bg)] border-2 border-[var(--color-primary)] doodle-border shadow-md" : "bg-[var(--color-glass-bg)] ring-1 ring-[var(--color-primary)]/20 shadow-md scale-[1.02]"
                     : "hover:bg-[var(--color-chat-bg)]/60 hover:shadow-sm border border-transparent"
-                  }`}
+                  } ${isDoodleMode && activeId !== conv.id ? 'doodle-border' : ''}`}
               >
                 <div className="relative shrink-0">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white shadow-sm transition-transform group-hover:scale-105" style={{ background: getAvatarGradient(otherUser.name) }}>
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white shadow-sm transition-transform group-hover:scale-105 ${isDoodleMode ? 'group-hover:animate-wobbly' : ''}`} style={{ background: getAvatarGradient(otherUser.name) }}>
                     {otherUser.name.charAt(0).toUpperCase()}
                   </div>
                   {otherUser.status === "ONLINE" && (

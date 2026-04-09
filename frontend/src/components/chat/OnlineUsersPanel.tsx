@@ -5,8 +5,9 @@ import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { getAvatarGradient } from "@/lib/avatarGradients";
-import { Search, Circle } from "lucide-react";
+import { Search, Circle, Pencil } from "lucide-react";
 import { API_URL } from "@/lib/config";
+import { useDoodle } from "@/context/DoodleContext";
 
 interface User {
   id: string;
@@ -23,6 +24,7 @@ export default function OnlineUsersPanel({
 }) {
   const { token, user: currentUser } = useAuth();
   const { socket } = useSocket();
+  const { isDoodleMode } = useDoodle();
   const [users, setUsers] = useState<User[]>([]);
   const [filter, setFilter] = useState("");
   const [isStarting, setIsStarting] = useState(false);
@@ -92,9 +94,9 @@ export default function OnlineUsersPanel({
             placeholder="Search contacts..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-[var(--color-bg)]/80 backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 shadow-inner transition-all placeholder:text-[var(--color-text-secondary)]/70 font-medium"
+            className={`w-full pl-11 pr-4 py-2.5 bg-[var(--color-bg)]/80 backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 shadow-inner transition-all placeholder:text-[var(--color-text-secondary)]/70 font-medium ${isDoodleMode ? 'doodle-border' : ''}`}
           />
-          <Search className="absolute left-4 top-3 text-[var(--color-text-secondary)] h-4 w-4" />
+          <Search className={`absolute left-4 top-3 text-[var(--color-text-secondary)] h-4 w-4 ${isDoodleMode ? 'hover:animate-wobbly' : ''}`} />
         </div>
       </div>
 
@@ -110,10 +112,10 @@ export default function OnlineUsersPanel({
               <div
                 key={u.id}
                 onClick={() => startConversation(u)}
-                className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-[2rem] group ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-[2rem] group ${isStarting ? 'opacity-50 cursor-not-allowed' : ''} ${isDoodleMode ? 'doodle-border' : ''}`}
               >
                 <div className="relative shrink-0">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shadow-sm group-hover:scale-105 transition-transform text-lg" style={{ background: getAvatarGradient(u.name) }}>
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shadow-sm group-hover:scale-105 transition-transform text-lg ${isDoodleMode ? 'group-hover:animate-wobbly' : ''}`} style={{ background: getAvatarGradient(u.name) }}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border border-[var(--color-background)]"></div>

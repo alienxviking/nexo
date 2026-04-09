@@ -3,7 +3,13 @@ import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const connectionString = `${process.env.DATABASE_URL}`;
-const pool = new Pool({ connectionString });
+
+// In production, Supabase via Render requires SSL.
+const pool = new Pool({ 
+  connectionString,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+});
+
 const adapter = new PrismaPg(pool as any);
 
 const globalForPrisma = globalThis as unknown as {

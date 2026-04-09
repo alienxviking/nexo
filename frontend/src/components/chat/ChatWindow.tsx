@@ -7,6 +7,7 @@ import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, M
 import { format, isToday, isYesterday } from "date-fns";
 import EmojiPicker, { Theme, Emoji, EmojiStyle } from "emoji-picker-react";
 import { getAvatarGradient } from "@/lib/avatarGradients";
+import { useDoodle } from "@/context/DoodleContext";
 import VoicePlayer from "./VoicePlayer";
 import { API_URL } from "@/lib/config";
 
@@ -154,6 +155,7 @@ const MessageItem = memo(({
 
   const dismissLongPressMenu = () => setShowLongPressMenu(false);
 
+  const { isDoodleMode } = useDoodle();
   // Swipe progress from 0 to 1
   const swipeProgress = Math.min(swipeX / SWIPE_THRESHOLD, 1);
 
@@ -162,7 +164,7 @@ const MessageItem = memo(({
       {showTime && (
         <div className="flex items-center gap-3 my-4 self-center w-full max-w-xs">
           <div className="flex-1 h-px bg-[var(--color-border)]/50"></div>
-          <span className="text-[10px] font-semibold text-[var(--color-text-secondary)] bg-[var(--color-glass-bg)] backdrop-blur-sm px-4 py-1.5 rounded-full border border-[var(--color-glass-border)] shadow-sm whitespace-nowrap">
+          <span className={`text-[10px] font-semibold text-[var(--color-text-secondary)] bg-[var(--color-glass-bg)] backdrop-blur-sm px-4 py-1.5 rounded-full border border-[var(--color-glass-border)] shadow-sm whitespace-nowrap ${isDoodleMode ? "doodle-border" : ""}`}>
             {(() => {
               const d = new Date(msg.createdAt);
               if (isToday(d)) return `Today, ${format(d, "h:mm a")}`;
@@ -228,11 +230,11 @@ const MessageItem = memo(({
           )}
 
           <div
-            className={`w-fit max-w-[75%] md:max-w-[70%] ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3 rounded-[1.25rem] md:rounded-[1.5rem]"} ${msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
+            className={`w-fit max-w-[75%] md:max-w-[70%] transition-all duration-300 ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3 rounded-[1.25rem] md:rounded-[1.5rem]"} ${msg.isDeleted ? "bg-transparent border border-dashed border-[var(--color-border)] text-[var(--color-text-secondary)] italic" :
               isEmojiOnly ? "bg-transparent shadow-none" :
                 isMe
-                  ? "bg-[var(--color-primary)] text-[var(--color-background)] shadow-[0_2px_10px_-4px_var(--color-primary)] bubble-tail-me"
-                  : "bg-[var(--color-glass-bg)] backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] shadow-sm bubble-tail-other"
+                  ? `bg-[var(--color-primary)] text-[var(--color-background)] shadow-[0_2px_10px_-4px_var(--color-primary)] ${isDoodleMode ? 'doodle-border' : 'bubble-tail-me'}`
+                  : `bg-[var(--color-glass-bg)] backdrop-blur-md text-[var(--color-text-main)] border border-[var(--color-glass-border)] shadow-sm ${isDoodleMode ? 'doodle-border' : 'bubble-tail-other'}`
               }`}
           >
             {msg.replyTo && !msg.isDeleted && (
@@ -425,6 +427,7 @@ const ChatInput = memo(({
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   scrollToBottom: () => void;
 }) => {
+  const { isDoodleMode } = useDoodle();
   const [newMessage, setNewMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -688,9 +691,9 @@ const ChatInput = memo(({
             onClick={() => setShowAttachMenu(!showAttachMenu)}
             className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-2xl md:rounded-[2rem] transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer 
               ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20' 
-              : 'bg-[var(--color-chat-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] shadow-sm'}`}
+              : 'bg-[var(--color-chat-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] shadow-sm'} ${isDoodleMode ? 'doodle-border' : ''}`}
           >
-            <Plus className={`w-6 h-6 transition-transform duration-200 ${showAttachMenu ? 'rotate-45' : ''}`} />
+            <Plus className={`w-6 h-6 transition-transform duration-200 ${showAttachMenu ? 'rotate-45' : ''} ${isDoodleMode && (showAttachMenu || scheduleTime || selfDestructTimer) ? 'animate-wobbly' : ''}`} />
           </button>
 
           <div className="flex-1 relative group">
@@ -700,9 +703,9 @@ const ChatInput = memo(({
               value={newMessage}
               onChange={handleTyping}
               placeholder={editingMessage ? "Edit message..." : "Type a message..."}
-              className="w-full h-12 md:h-14 pl-6 md:pl-8 pr-12 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-2xl md:rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-[var(--color-primary)] transition-all shadow-sm text-sm md:text-base text-[var(--color-text-main)] placeholder:text-[var(--color-text-secondary)]/50"
+              className={`w-full h-12 md:h-14 pl-6 md:pl-8 pr-12 bg-[var(--color-chat-bg)] border border-[var(--color-border)] rounded-2xl md:rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:border-[var(--color-primary)] transition-all shadow-sm text-sm md:text-base text-[var(--color-text-main)] placeholder:text-[var(--color-text-secondary)]/50 ${isDoodleMode ? 'doodle-border shadow-[4px_4px_0_0_rgba(0,0,0,0.1)]' : ''}`}
             />
-            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${showEmojiPicker ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'}`}>
+            <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)} className={`absolute right-4 top-1/2 -translate-y-1/2 transition-colors ${showEmojiPicker ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-primary)]'} ${isDoodleMode ? 'hover:animate-wobbly' : ''}`}>
               <Smile className="w-6 h-6" />
             </button>
           </div>
@@ -712,17 +715,17 @@ const ChatInput = memo(({
               <button
                 type="submit"
                 disabled={uploading}
-                className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-[var(--color-primary)] text-white rounded-full shadow-lg hover:shadow-[var(--color-primary)]/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-[var(--color-primary)] text-white rounded-full shadow-lg hover:shadow-[var(--color-primary)]/30 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 ${isDoodleMode ? 'doodle-border' : ''}`}
               >
-                {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Send className="w-5 h-5 ml-0.5" />}
+                {uploading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Send className={`w-5 h-5 ml-0.5 ${isDoodleMode ? 'animate-wobbly' : ''}`} />}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={toggleRecording}
-                className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-full border transition-all shadow-sm ${isRecording ? 'bg-red-500 border-red-500 text-white animate-pulse' : 'bg-[var(--color-chat-bg)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/30'}`}
+                className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-full border transition-all shadow-sm ${isRecording ? 'bg-red-500 border-red-500 text-white animate-pulse' : 'bg-[var(--color-chat-bg)] border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/30'} ${isDoodleMode ? 'doodle-border' : ''}`}
               >
-                {isRecording ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                {isRecording ? <Square className="w-5 h-5" /> : <Mic className={`w-5 h-5 ${isDoodleMode && isRecording ? 'animate-wobbly' : ''}`} />}
               </button>
             )}
           </div>

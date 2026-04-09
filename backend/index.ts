@@ -30,6 +30,15 @@ import { setupSocketHandlers } from "./lib/socket";
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Routes
+app.get("/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", database: "connected" });
+  } catch (err) {
+    res.status(503).json({ status: "error", database: "disconnected" });
+  }
+});
+
 app.get("/", (req, res) => {
   res.send("Nexo API is running!");
 });

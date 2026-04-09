@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Sparkles, Shield, Zap } from "lucide-react";
+import { MessageSquare, Sparkles, Shield, Zap, Pencil } from "lucide-react";
 import { API_URL } from "@/lib/config";
+import { useDoodle } from "@/context/DoodleContext";
 
 export default function AuthPage() {
+  const { isDoodleMode, toggleDoodleMode } = useDoodle();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,6 +47,16 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex bg-[var(--color-bg)] relative overflow-hidden">
+      {/* Doodle Mode Toggle (Persistent) */}
+      <button 
+        onClick={toggleDoodleMode}
+        type="button"
+        className={`absolute top-6 right-6 z-50 p-4 transition-all hover:scale-110 active:scale-95 group ${isDoodleMode ? 'bg-orange-500 text-white doodle-border rotate-3 shadow-lg' : 'bg-[var(--color-glass-bg)] text-[var(--color-text-secondary)] rounded-2xl border border-[var(--color-glass-border)] shadow-sm'}`}
+        title="Toggle Doodle Mode"
+      >
+        <Pencil className={`w-6 h-6 ${isDoodleMode ? 'animate-wobbly' : 'group-hover:rotate-12 transition-transform'}`} />
+      </button>
+
       {/* Animated background blobs */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[var(--color-primary)]/15 rounded-full mix-blend-multiply filter blur-[80px] animate-blob"></div>
       <div className="absolute top-[30%] right-[-5%] w-[400px] h-[400px] bg-[var(--color-primary-hover)]/15 rounded-full mix-blend-multiply filter blur-[80px] animate-blob animation-delay-2000"></div>
@@ -54,8 +66,8 @@ export default function AuthPage() {
       <div className="hidden lg:flex flex-1 items-center justify-center p-16 relative z-10">
         <div className="max-w-md space-y-10">
           {/* Logo */}
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-[var(--color-primary)] rounded-[1.5rem] flex items-center justify-center shadow-xl rotate-3 hover:rotate-6 transition-transform">
+          <div className="flex items-center gap-4 text-[var(--font-patrick-hand)]">
+            <div className={`w-16 h-16 bg-[var(--color-primary)] rounded-[1.5rem] flex items-center justify-center shadow-xl rotate-3 hover:rotate-6 transition-transform ${isDoodleMode ? 'doodle-border text-white' : ''}`}>
               <span className="text-4xl font-black text-[var(--color-background)]">N</span>
             </div>
             <h1 className="text-5xl font-black bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-text-main)] bg-clip-text text-transparent">
@@ -102,11 +114,11 @@ export default function AuthPage() {
 
       {/* Right panel — Auth form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-16 relative z-10">
-        <div className="w-full max-w-md p-10 lg:p-12 bg-[var(--color-glass-bg)] backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-[var(--color-glass-border)] transition-all duration-500">
+        <div className={`w-full max-w-md p-10 lg:p-12 bg-[var(--color-glass-bg)] backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-[var(--color-glass-border)] transition-all duration-500 ${isDoodleMode ? 'doodle-border -rotate-1' : ''}`}>
           
           {/* Mobile-only logo */}
           <div className="flex justify-center mb-8 lg:hidden">
-            <div className="w-16 h-16 bg-[var(--color-primary)] rounded-[1.5rem] flex items-center justify-center shadow-xl rotate-3 hover:rotate-12 transition-transform">
+            <div className={`w-16 h-16 bg-[var(--color-primary)] rounded-[1.5rem] flex items-center justify-center shadow-xl rotate-3 hover:rotate-12 transition-transform ${isDoodleMode ? 'doodle-border' : ''}`}>
               <span className="text-3xl font-black text-[var(--color-background)]">N</span>
             </div>
           </div>
