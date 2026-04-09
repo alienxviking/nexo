@@ -66,7 +66,7 @@ export default function AuthPage() {
 
 
       {/* Auth form mapped to center explicitly since left is gone */}
-      <div className="w-full h-full flex flex-col items-center justify-center p-6 lg:p-16 relative z-10">
+      <div className="flex-1 w-full flex flex-col items-center justify-center p-6 relative z-10">
         <div className={`w-full max-w-md p-10 lg:p-12 bg-[var(--color-glass-bg)] backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-[var(--color-glass-border)] transition-all duration-500 ${isDoodleMode ? 'doodle-border' : ''}`}>
           
           {/* Logo (Now visible on all screens since we removed left panel) */}
@@ -118,25 +118,27 @@ export default function AuthPage() {
               />
             </div>
 
-            <div className="relative">
+            <div>
               <label className="block text-sm font-bold text-[var(--color-text-main)] mb-2 ml-1">Password</label>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-6 py-4 pr-12 bg-[var(--color-input-bg)]/80 backdrop-blur-sm text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:bg-[var(--color-input-bg)] transition-all shadow-inner font-medium disabled:opacity-50"
-                required
-                placeholder="••••••••"
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-[42px] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors focus:outline-none"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-6 py-4 pr-12 bg-[var(--color-input-bg)]/80 backdrop-blur-sm text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:bg-[var(--color-input-bg)] transition-all shadow-inner font-medium disabled:opacity-50"
+                  required
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors focus:outline-none"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             <button
