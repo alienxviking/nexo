@@ -25,7 +25,7 @@
 
   /* Doodle pattern */
   --pattern-color: #E8729A;
-  --pattern-opacity: 0.06;
+  --pattern-opacity: 0.15;
 }
 
 /* --- THEME: Cute Dark --- */
@@ -51,8 +51,8 @@
   --input-bg: #241D2E;
 
   /* Doodle pattern */
-  --pattern-color: #E8729A;
-  --pattern-opacity: 0.04;
+  --pattern-color: #F08AB0;
+  --pattern-opacity: 0.12;
 }
 
 @theme inline {

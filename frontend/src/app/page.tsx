@@ -52,7 +52,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[var(--color-bg)] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-transparent relative overflow-hidden">
       {/* Theme Toggle */}
       <div className="absolute top-6 right-6 z-50">
         <ThemeSwitcher />
