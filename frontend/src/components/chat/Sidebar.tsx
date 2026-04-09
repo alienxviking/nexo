@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
-import { Search, MessageSquare, X } from "lucide-react";
+import { Search, MessageSquare, X, Loader2 } from "lucide-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { getAvatarGradient } from "@/lib/avatarGradients";
 import { API_URL } from "@/lib/config";
@@ -46,6 +46,7 @@ export default function Sidebar({
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isStarting, setIsStarting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const toastTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
@@ -150,6 +151,7 @@ export default function Sidebar({
 
   const fetchConversations = async () => {
     if (!token) return;
+    setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -158,6 +160,8 @@ export default function Sidebar({
       setConversations(data);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -265,6 +269,13 @@ export default function Sidebar({
                 </div>
               </div>
             ))}
+          </div>
+        ) : isLoading ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[var(--color-primary)]">
+            <div className="w-16 h-16 bg-[var(--color-primary)]/10 rounded-[1.5rem] flex items-center justify-center mb-4">
+              <Loader2 className="w-8 h-8 opacity-60 animate-spin" />
+            </div>
+            <p className="text-[var(--color-text-secondary)] text-sm font-medium animate-pulse">Loading amazing chats...</p>
           </div>
         ) : conversations.length > 0 ? (
           conversations.map(conv => {

@@ -1023,15 +1023,56 @@ export default function ChatWindow({
   }, [socket, messageToDelete, conversationId, currentActiveUser.id]);
 
   const addReaction = useCallback((msgId: string, emoji: string) => {
-    if (!socket) return;
+    if (!socket || !currentUser) return;
+
+    let backupMessages: Message[] = [];
+    
+    // Optimistic UI update
+    setMessages(prev => {
+      backupMessages = prev;
+      return prev.map(msg => {
+        if (msg.id === msgId) {
+          const reactions = msg.reactions || [];
+          const existing = reactions.find(r => r.user?.id === currentUser.id);
+          
+          if (existing && existing.emoji === emoji) {
+            return { ...msg, reactions: reactions.filter(r => r.id !== existing.id) };
+          } else if (existing) {
+            return {
+              ...msg,
+              reactions: reactions.map(r => r.id === existing.id ? { ...r, emoji } : r)
+            };
+          } else {
+            return {
+              ...msg,
+              reactions: [...reactions, {
+                id: `temp-${Date.now()}`,
+                emoji,
+                messageId: msgId,
+                user: { id: currentUser.id, name: currentUser.name || "Me" }
+              }]
+            };
+          }
+        }
+        return msg;
+      });
+    });
+
     socket.emit("add_reaction", {
       messageId: msgId,
       emoji,
       conversationId,
       receiverId: currentActiveUser.id
+    }, (res: any) => {
+      if (res && res.error) {
+        setMessages(backupMessages);
+        setNewMsgToast({ sender: "Error", text: "Problem sending reaction ⚠️" });
+        if (newMsgToastTimeout.current) clearTimeout(newMsgToastTimeout.current);
+        newMsgToastTimeout.current = setTimeout(() => setNewMsgToast(null), 3000);
+      }
     });
     setActiveMenu(null);
-  }, [socket, conversationId, currentActiveUser.id]);
+  }, [socket, conversationId, currentActiveUser.id, currentUser]);
 
   const startReply = useCallback((msg: Message) => {
     setReplyingTo(msg);
