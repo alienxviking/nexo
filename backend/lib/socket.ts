@@ -7,6 +7,9 @@ const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
 // Track connected users
 // Using Socket.io rooms for reliable delivery across multiple tabs
 
+// Track processing state to prevent spam
+const activeSeenRequests = new Set<string>();
+
 export function setupSocketHandlers(io: SocketIOServer) {
   // Authentication middleware for Socket.io
   io.use((socket, next) => {
@@ -105,8 +108,12 @@ export function setupSocketHandlers(io: SocketIOServer) {
     });
 
     socket.on("mark_all_seen", async ({ conversationId, senderId }) => {
+      const lockKey = `${userId}-${conversationId}-${senderId}`;
+      if (activeSeenRequests.has(lockKey)) return;
+      
       try {
-        console.log(`Marking all messages as SEEN for conversation ${conversationId} sent by ${senderId}`);
+        activeSeenRequests.add(lockKey);
+        console.log(`[DB] Marking seen for conv ${conversationId} by ${senderId}`);
         await prisma.message.updateMany({
           where: {
             conversationId,
@@ -116,10 +123,11 @@ export function setupSocketHandlers(io: SocketIOServer) {
           data: { status: "SEEN" }
         });
 
-        console.log(`Notifying sender ${senderId} in room ${senderId}`);
         io.to(senderId).emit("conversation_seen", { conversationId });
       } catch (error) {
         console.error("Mark all seen error", error);
+      } finally {
+        activeSeenRequests.delete(lockKey);
       }
     });
 
@@ -283,7 +291,7 @@ export function setupSocketHandlers(io: SocketIOServer) {
     } catch (e) {
       console.error("Cron job error:", e);
     }
-  }, 10000); // Check every 10 seconds
+  }, 60000); // Check every 60 seconds (relaxed for performance)
 }
 
 // Force TS server to re-evaluate after prisma generate

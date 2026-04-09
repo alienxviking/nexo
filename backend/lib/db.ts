@@ -13,7 +13,10 @@ if (!connectionString) {
 // In production, Supabase via Render requires SSL.
 const pool = new Pool({ 
   connectionString,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  max: 10, // Limit connections to Supabase free tier limits
+  connectionTimeoutMillis: 10000, // 10s wait for a connection
+  idleTimeoutMillis: 30000, // 30s before closing idle clients
 });
 
 pool.on('error', (err) => {
