@@ -66,11 +66,11 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Update status to ONLINE
-    await prisma.user.update({
+    // Update status to ONLINE (Non-blocking for faster login)
+    prisma.user.update({
       where: { id: user.id },
       data: { status: "ONLINE", lastSeen: new Date() },
-    });
+    }).catch(err => console.error("Async status update failed:", err));
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "7d" });
 
