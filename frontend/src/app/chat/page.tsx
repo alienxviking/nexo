@@ -113,22 +113,22 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Side Panel — switches based on active tab */}
+      {/* Side Panel — all panels stay mounted, hidden when inactive */}
       <div className={`flex-1 md:flex-none md:w-80 h-full ${showChat ? 'hidden md:block' : 'block md:block'} rounded-none md:rounded-[20px] overflow-hidden border-b md:border-2 md:border-dashed border-[var(--color-border)] shadow-sm transition-all duration-300`}>
-        {activeTab === "chats" && (
+        <div className={`h-full ${activeTab === "chats" ? "block" : "hidden"}`}>
           <Sidebar
             onSelectConversation={handleSelectConversation}
             activeId={activeConversationId}
           />
-        )}
-        {activeTab === "users" && (
+        </div>
+        <div className={`h-full ${activeTab === "users" ? "block" : "hidden"}`}>
           <OnlineUsersPanel
             onSelectUser={handleSelectConversation}
           />
-        )}
-        {activeTab === "settings" && (
+        </div>
+        <div className={`h-full ${activeTab === "settings" ? "block" : "hidden"}`}>
           <SettingsPanel onLogout={handleLogout} />
-        )}
+        </div>
       </div>
 
       {/* Chat Window */}

@@ -925,7 +925,10 @@ export default function ChatWindow({
   useEffect(() => {
     // Only auto-scroll on initial load / conversation switch
     if (messages.length > 0) {
-      scrollToBottom();
+      // Use instant scroll for conversation switch — smooth feels sluggish
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+      }, 50);
     }
   }, [conversationId]);
 
@@ -954,7 +957,13 @@ export default function ChatWindow({
       });
       const data = await res.json();
       setMessages(data);
-      scrollToBottom();
+      
+      // Wait for React to render messages before scrolling
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+        }, 50);
+      });
 
       // Mark loaded unread messages from the other user as SEEN
       if (socket && Array.isArray(data)) {

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { MessageSquare, Sparkles, Shield, Zap, Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/config";
 import { useDoodle } from "@/context/DoodleContext";
+import ThemeSwitcher from "@/components/chat/ThemeSwitcher";
 
 export default function AuthPage() {
   const { isDoodleMode } = useDoodle();
@@ -51,6 +52,11 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex bg-[var(--color-bg)] relative overflow-hidden">
+      {/* Theme Toggle */}
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeSwitcher />
+      </div>
+
       {/* Animated background blobs */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-[var(--color-primary)]/15 rounded-full mix-blend-multiply filter blur-[80px] animate-blob"></div>
       <div className="absolute top-[30%] right-[-5%] w-[400px] h-[400px] bg-[var(--color-primary-hover)]/15 rounded-full mix-blend-multiply filter blur-[80px] animate-blob animation-delay-2000"></div>
