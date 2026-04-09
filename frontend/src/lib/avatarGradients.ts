@@ -1,17 +1,18 @@
 // Gradient pairs for user avatars — hashed from the username
 const GRADIENT_PAIRS = [
-  ['#FF6B6B', '#EE5A24'],  // Coral → Orange
-  ['#A29BFE', '#6C5CE7'],  // Soft Purple → Deep Purple
-  ['#55E6C1', '#1ABC9C'],  // Mint → Teal
-  ['#FD79A8', '#E84393'],  // Pink → Hot Pink
-  ['#FDCB6E', '#F39C12'],  // Gold → Amber
-  ['#74B9FF', '#0984E3'],  // Sky → Blue
-  ['#00CEC9', '#00B894'],  // Cyan → Emerald
-  ['#E17055', '#D63031'],  // Terracotta → Red
-  ['#81ECEC', '#6C5CE7'],  // Aqua → Indigo
-  ['#FAB1A0', '#E55039'],  // Peach → Vermillion
-  ['#DFE6E9', '#B2BEC3'],  // Silver → Slate
-  ['#FFEAA7', '#FDCB6E'],  // Lemon → Gold
+  // Cute Pastel Colors
+  ['#FFD1DC', '#FFB7B2'],  // Pastel Pink to Soft Rose
+  ['#E2F0CB', '#B5EAD7'],  // Mint to Soft Seafoam
+  ['#C7CEEA', '#B5B9FF'],  // Lavender to Periwinkle
+  ['#FFDAC1', '#FFB7B2'],  // Peach to Melon
+  ['#FF9AA2', '#FFB7B2'],  // Strawberry to Coral Pink
+  ['#B5EAD7', '#87D3C6'],  // Soft Aqua to Sea Green
+  ['#E5D4FF', '#D2B4FF'],  // Lilac to Soft Purple
+  ['#FFFED2', '#FDFD96'],  // Buttercream to Pastel Yellow
+  ['#DED9EB', '#C4B9D8'],  // Heather to Lavender
+  ['#FAD1E6', '#F3A8D2'],  // Cotton Candy Pink
+  ['#C1E1C1', '#A3D3A3'],  // Pastel Green
+  ['#B1EBFE', '#8CDBFC'],  // Baby Blue
 ];
 
 function hashString(str: string): number {

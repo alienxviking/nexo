@@ -214,7 +214,7 @@ export default function Sidebar({
             onClick={() => handleToastClick(toast)}
             className="pointer-events-auto bg-[var(--color-primary)] text-[var(--color-background)] px-4 py-3 rounded-[1.5rem] shadow-xl flex items-center gap-3 cursor-pointer hover:scale-[1.02] transition-all animate-in fade-in mx-1"
           >
-            <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 ring-2 ring-white/30" style={{ background: getAvatarGradient(toast.sender) }}>
+            <div className="w-9 h-9 rounded-[12px] border-2 border-dashed border-white/50 flex items-center justify-center text-[var(--color-text-main)] font-black text-sm shrink-0" style={{ background: getAvatarGradient(toast.sender) }}>
               {toast.sender.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -257,7 +257,7 @@ export default function Sidebar({
                 onClick={() => startConversation(u)}
                 className={`flex items-center p-3 mx-1 hover:bg-[var(--color-chat-bg)]/60 cursor-pointer transition-all rounded-2xl group ${isStarting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform text-lg" style={{ background: getAvatarGradient(u.name) }}>
+                <div className="w-12 h-12 rounded-[16px] border-2 border-dashed border-white/40 flex items-center justify-center text-[var(--color-text-main)] font-black shrink-0 transition-transform text-lg" style={{ background: getAvatarGradient(u.name) }}>
                   {u.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="ml-4">
@@ -292,7 +292,7 @@ export default function Sidebar({
                   } ${isDoodleMode && activeId !== conv.id ? 'doodle-border' : ''}`}
               >
                 <div className="relative shrink-0">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl text-white shadow-sm transition-transform group-hover:scale-105 ${isDoodleMode ? 'group-hover:animate-wobbly' : ''}`} style={{ background: getAvatarGradient(otherUser.name) }}>
+                  <div className={`w-12 h-12 rounded-[16px] border-2 border-dashed border-white/40 flex items-center justify-center font-black text-xl text-[var(--color-text-main)] shadow-sm transition-transform group-hover:scale-105 ${isDoodleMode ? 'group-hover:animate-wobbly' : ''}`} style={{ background: getAvatarGradient(otherUser.name) }}>
                     {otherUser.name.charAt(0).toUpperCase()}
                   </div>
                   {otherUser.status === "ONLINE" && (

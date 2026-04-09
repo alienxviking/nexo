@@ -21,7 +21,7 @@ export default function SettingsPanel({
       <div className="flex-1 overflow-y-auto">
         {/* Profile Card */}
         <div className="p-6 pt-8 flex flex-col items-center text-center">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center text-white font-black text-3xl shadow-xl ring-4 ring-white/10 mb-4" style={{ background: getAvatarGradient(currentUser?.name || 'U') }}>
+          <div className="w-20 h-20 rounded-[24px] border-4 border-dashed border-white/50 flex items-center justify-center text-[var(--color-text-main)] font-black text-3xl shadow-xl mb-4" style={{ background: getAvatarGradient(currentUser?.name || 'U') }}>
             {currentUser?.name?.charAt(0).toUpperCase()}
           </div>
           <h3 className="text-xl font-black text-[var(--color-text-main)]">{currentUser?.name}</h3>

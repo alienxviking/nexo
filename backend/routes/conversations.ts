@@ -97,22 +97,11 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
 router.get("/:id/messages", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const id = req.params.id as string;
-    
-    // Verify user is participant
-    const conversation = await prisma.conversation.findFirst({
-      where: {
-        id: id,
-        participants: { some: { id: req.userId } }
-      }
-    });
-
-    if (!conversation) {
-      return res.status(403).json({ error: "Access denied" });
-    }
-
+    // First try fetching messages directly assuming access (faster)
     const messages = await prisma.message.findMany({
       where: { 
         conversationId: id,
+        conversation: { participants: { some: { id: req.userId } } },
         AND: [
           { OR: [{ scheduledAt: null }, { scheduledAt: { lte: new Date() } }] }
         ]

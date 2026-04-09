@@ -451,8 +451,12 @@ const ChatInput = memo(({
           messageInputRef.current.setSelectionRange(editingMessage.content.length, editingMessage.content.length);
         }
       }, 50);
-    } else if (replyingTo) {
-      setTimeout(() => messageInputRef.current?.focus(), 50);
+    } else {
+      // Clear input when edit is cancelled
+      setNewMessage("");
+      if (replyingTo) {
+        setTimeout(() => messageInputRef.current?.focus(), 50);
+      }
     }
   }, [editingMessage, replyingTo]);
 
@@ -597,9 +601,9 @@ const ChatInput = memo(({
   };
 
   return (
-    <div className="bg-[var(--color-glass-bg)] backdrop-blur-xl border-t border-[var(--color-glass-border)] p-4 md:p-6 z-20">
+    <div className="bg-[var(--color-sidebar)] border-t-2 border-dashed border-[var(--color-border)] p-4 md:p-6 z-20">
       {replyingTo && (
-        <div className="flex items-center justify-between bg-[var(--color-chat-bg)]/80 backdrop-blur-md rounded-2xl p-4 mb-4 border border-[var(--color-border)] animate-in slide-in-from-bottom-2 duration-300 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between bg-[var(--color-bg)] rounded-[16px] p-4 mb-4 border-2 border-dashed border-[var(--color-primary)]/40 animate-in slide-in-from-bottom-2 duration-300 overflow-hidden">
           <div className="flex items-center space-x-3 overflow-hidden">
             <div className="w-1 h-8 bg-[var(--color-primary)] rounded-full shrink-0"></div>
             <div className="overflow-hidden">
@@ -612,7 +616,7 @@ const ChatInput = memo(({
       )}
 
       {editingMessage && (
-        <div className="flex items-center justify-between bg-orange-50/80 backdrop-blur-md rounded-2xl p-4 mb-4 border border-orange-200 animate-in slide-in-from-bottom-2 duration-300 shadow-sm overflow-hidden dark:bg-orange-950/20 dark:border-orange-900/30">
+        <div className="flex items-center justify-between bg-orange-50/80 rounded-[16px] p-4 mb-4 border-2 border-dashed border-orange-300 animate-in slide-in-from-bottom-2 duration-300 overflow-hidden dark:bg-orange-950/20 dark:border-orange-800/50">
           <div className="flex items-center space-x-3 overflow-hidden">
             <div className="w-1 h-8 bg-orange-500 rounded-full shrink-0"></div>
             <div className="overflow-hidden">
@@ -751,6 +755,7 @@ export default function ChatWindow({
   const { token, user: currentUser } = useAuth();
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [isTyping, setIsTyping] = useState(false);
   const [currentActiveUser, setCurrentActiveUser] = useState<User>(activeUser);
 
@@ -951,12 +956,14 @@ export default function ChatWindow({
   };
 
   const fetchMessages = async () => {
+    setIsLoadingMessages(true);
     try {
       const res = await fetch(`${API_URL}/api/conversations/${conversationId}/messages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       setMessages(data);
+      setIsLoadingMessages(false);
       
       // Wait for React to render messages before scrolling
       requestAnimationFrame(() => {
@@ -977,6 +984,7 @@ export default function ChatWindow({
       }
     } catch (err) {
       console.error(err);
+      setIsLoadingMessages(false);
     }
   };
 
@@ -1060,7 +1068,7 @@ export default function ChatWindow({
             </button>
           )}
           <div className="relative">
-            <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-white/10" style={{ background: getAvatarGradient(currentActiveUser.name) }}>
+            <div className="w-11 h-11 rounded-[16px] border-2 border-dashed border-white/50 flex items-center justify-center text-[var(--color-text-main)] font-black text-lg shadow-md" style={{ background: getAvatarGradient(currentActiveUser.name) }}>
               {currentActiveUser.name.charAt(0)}
             </div>
             {currentActiveUser.status === "ONLINE" && (
@@ -1140,7 +1148,31 @@ export default function ChatWindow({
 
       {/* Messages Area */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-4 relative">
-        {messages.map((msg, index) => (
+        {isLoadingMessages ? (
+          <div className="flex flex-col space-y-4 animate-pulse">
+            {/* Skeleton bubbles */}
+            <div className="flex justify-start">
+              <div className="w-[55%] h-12 rounded-[20px] border-2 border-dashed border-[var(--color-border)] bg-[var(--color-recv-msg)]/50"></div>
+            </div>
+            <div className="flex justify-end">
+              <div className="w-[45%] h-12 rounded-[20px] border-2 border-dashed border-[var(--color-primary)]/20 bg-[var(--color-sent-msg-light)]/50"></div>
+            </div>
+            <div className="flex justify-start">
+              <div className="w-[60%] h-16 rounded-[20px] border-2 border-dashed border-[var(--color-border)] bg-[var(--color-recv-msg)]/50"></div>
+            </div>
+            <div className="flex justify-end">
+              <div className="w-[40%] h-10 rounded-[20px] border-2 border-dashed border-[var(--color-primary)]/20 bg-[var(--color-sent-msg-light)]/50"></div>
+            </div>
+            <div className="flex justify-start">
+              <div className="w-[50%] h-12 rounded-[20px] border-2 border-dashed border-[var(--color-border)] bg-[var(--color-recv-msg)]/50"></div>
+            </div>
+            <div className="flex justify-end">
+              <div className="w-[55%] h-14 rounded-[20px] border-2 border-dashed border-[var(--color-primary)]/20 bg-[var(--color-sent-msg-light)]/50"></div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {messages.map((msg, index) => (
           <MessageItem
             key={msg.id}
             msg={msg}
@@ -1170,11 +1202,13 @@ export default function ChatWindow({
           </div>
         )}
         <div ref={messagesEndRef} />
+        </>
+        )}
       </div>
 
       {/* Scroll to bottom button */}
       {!isNearBottom && (
-        <div className="absolute bottom-32 right-8 z-30">
+        <div className={`absolute right-8 z-30 transition-all duration-300 ${replyingTo || editingMessage ? 'bottom-56' : 'bottom-32'}`}>
           <button
             onClick={scrollToBottom}
             className="no-doodle w-10 h-10 bg-[var(--color-sidebar)] border-2 border-dashed border-[var(--color-border)] rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white hover:border-[var(--color-primary)]"
