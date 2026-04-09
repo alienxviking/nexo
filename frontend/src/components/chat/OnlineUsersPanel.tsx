@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { getAvatarGradient } from "@/lib/avatarGradients";
@@ -86,8 +86,14 @@ export default function OnlineUsersPanel({
 
   return (
     <div className="w-full md:w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)]">
-      {/* Search */}
+      {/* Header + Search */}
       <div className="p-4 pt-6 bg-[var(--color-sidebar)]/50">
+        <div className="flex items-center justify-between mb-4 px-1">
+          <h2 className="text-xl font-black text-[var(--color-text-main)]">Contacts</h2>
+          <span className="text-xs font-bold text-[var(--color-text-secondary)] bg-[var(--color-glass-bg)] px-3 py-1 rounded-full border border-[var(--color-glass-border)]">
+            {users.length} total
+          </span>
+        </div>
         <div className="relative">
           <input
             type="text"
@@ -118,7 +124,7 @@ export default function OnlineUsersPanel({
                   <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shadow-sm group-hover:scale-105 transition-transform text-lg ${isDoodleMode ? 'group-hover:animate-wobbly' : ''}`} style={{ background: getAvatarGradient(u.name) }}>
                     {u.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border border-[var(--color-background)]"></div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border border-[var(--color-background)] animate-pulse-dot"></div>
                 </div>
                 <div className="ml-3">
                   <p className="text-[var(--color-text-main)] font-semibold text-sm">{u.name}</p>
@@ -150,7 +156,7 @@ export default function OnlineUsersPanel({
                 <div className="ml-3">
                   <p className="text-[var(--color-text-main)] font-semibold text-sm">{u.name}</p>
                   <p className="text-[var(--color-text-secondary)] text-xs">
-                    {u.lastSeen ? `Last seen ${format(new Date(u.lastSeen), "MMM d, h:mm a")}` : "Offline"}
+                    {u.lastSeen ? `Last seen ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}` : "Offline"}
                   </p>
                 </div>
               </div>

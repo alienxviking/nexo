@@ -70,6 +70,15 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1, // Get latest message for preview
+          select: {
+            id: true,
+            content: true,
+            type: true,
+            isDeleted: true,
+            senderId: true,
+            createdAt: true,
+            status: true,
+          },
         },
       },
       orderBy: {

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { Search, MessageSquare, X } from "lucide-react";
+import { formatDistanceToNowStrict } from "date-fns";
 import { getAvatarGradient } from "@/lib/avatarGradients";
 import { API_URL } from "@/lib/config";
 import { useDoodle } from "@/context/DoodleContext";
@@ -230,8 +231,9 @@ export default function Sidebar({
         ))}
       </div>
 
-      {/* Search */}
+      {/* Header + Search */}
       <div className="p-4 bg-[var(--color-sidebar)]/50">
+        <h2 className="text-xl font-black text-[var(--color-text-main)] mb-4 px-1">Chats</h2>
         <div className="relative group">
           <input
             type="text"
@@ -294,18 +296,26 @@ export default function Sidebar({
                     {otherUser.name.charAt(0).toUpperCase()}
                   </div>
                   {otherUser.status === "ONLINE" && (
-                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full shadow-sm z-10 border border-[var(--color-background)]"></div>
+                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full shadow-sm z-10 border border-[var(--color-background)] animate-pulse-dot"></div>
                   )}
                 </div>
                 <div className="ml-4 flex-1 overflow-hidden">
                   <div className="flex justify-between items-baseline">
                     <p className={`font-semibold truncate ${activeId === conv.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-main)]'}`}>{otherUser.name}</p>
-                    {/* Unread badge */}
-                    {unread > 0 && (
-                      <span className="ml-2 shrink-0 min-w-[22px] h-[22px] flex items-center justify-center bg-[var(--color-primary)] text-[var(--color-background)] text-[11px] font-bold rounded-full px-1.5 shadow-md animate-in fade-in">
-                        {unread > 99 ? '99+' : unread}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      {/* Timestamp */}
+                      {lastMessage?.createdAt && (
+                        <span className="text-[10px] text-[var(--color-text-secondary)] whitespace-nowrap">
+                          {formatDistanceToNowStrict(new Date(lastMessage.createdAt), { addSuffix: false })}
+                        </span>
+                      )}
+                      {/* Unread badge */}
+                      {unread > 0 && (
+                        <span className="shrink-0 min-w-[22px] h-[22px] flex items-center justify-center bg-[var(--color-primary)] text-[var(--color-background)] text-[11px] font-bold rounded-full px-1.5 shadow-md animate-in fade-in">
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className={`text-sm truncate ${unread > 0 ? 'text-[var(--color-text-main)] font-semibold' : 'text-[var(--color-text-secondary)]'}`}>
                     {renderMessagePreview(lastMessage)}

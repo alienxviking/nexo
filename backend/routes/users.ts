@@ -42,6 +42,7 @@ router.get("/all", authenticateToken, async (req: AuthRequest, res) => {
         email: true,
         avatarUrl: true,
         status: true,
+        lastSeen: true,
       },
       orderBy: { name: "asc" },
     });
@@ -77,6 +78,7 @@ router.get("/search", authenticateToken, async (req: AuthRequest, res) => {
         email: true,
         avatarUrl: true,
         status: true,
+        lastSeen: true,
       },
       take: 20,
     });

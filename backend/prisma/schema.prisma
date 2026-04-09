@@ -63,6 +63,12 @@ model Message {
   replies          Message[]      @relation("ReplyTo")
 
   reactions        Reaction[]
+
+  @@index([conversationId, createdAt])  // Conversation messages sorted by time
+  @@index([senderId])                   // Messages by user lookup
+  @@index([status])                     // Unread message queries
+  @@index([scheduledAt])                // Cron job: scheduled messages
+  @@index([selfDestructAt])             // Cron job: self-destruct messages
 }
 
 model Reaction {
@@ -77,6 +83,7 @@ model Reaction {
   user             User           @relation(fields: [userId], references: [id])
 
   @@unique([messageId, userId, emoji])
+  @@index([messageId])                  // Reactions per message lookup
 }
 
 enum MessageType {

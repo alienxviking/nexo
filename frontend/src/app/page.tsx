@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Sparkles, Shield, Zap, Pencil } from "lucide-react";
+import { MessageSquare, Sparkles, Shield, Zap, Pencil, Loader2 } from "lucide-react";
 import { API_URL } from "@/lib/config";
 import { useDoodle } from "@/context/DoodleContext";
 
@@ -14,6 +14,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   
   const { login } = useAuth();
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     const url = isLogin ? `${API_URL}/api/auth/login` : `${API_URL}/api/auth/register`;
     const body = isLogin ? { email, password } : { email, password, name };
@@ -42,6 +44,8 @@ export default function AuthPage() {
       router.push("/chat");
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -131,22 +135,23 @@ export default function AuthPage() {
           </p>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-[1.5rem] mb-6 text-sm font-medium">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-[1.5rem] mb-6 text-sm font-medium animate-in fade-in duration-300">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && (
-              <div>
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                 <label className="block text-sm font-bold text-[var(--color-text-main)] mb-2 ml-1">Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-6 py-4 bg-[var(--color-input-bg)]/80 backdrop-blur-sm text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:bg-[var(--color-input-bg)] transition-all shadow-inner font-medium"
+                  className="w-full px-6 py-4 bg-[var(--color-input-bg)]/80 backdrop-blur-sm text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:bg-[var(--color-input-bg)] transition-all shadow-inner font-medium disabled:opacity-50"
                   required={!isLogin}
                   placeholder="John Doe"
+                  disabled={isLoading}
                 />
               </div>
             )}
@@ -157,9 +162,10 @@ export default function AuthPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-6 py-4 bg-[var(--color-input-bg)]/80 backdrop-blur-sm text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:bg-[var(--color-input-bg)] transition-all shadow-inner font-medium"
+                className="w-full px-6 py-4 bg-[var(--color-input-bg)]/80 backdrop-blur-sm text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:bg-[var(--color-input-bg)] transition-all shadow-inner font-medium disabled:opacity-50"
                 required
                 placeholder="you@example.com"
+                disabled={isLoading}
               />
             </div>
 
@@ -169,25 +175,35 @@ export default function AuthPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-6 py-4 bg-[var(--color-input-bg)]/80 backdrop-blur-sm text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:bg-[var(--color-input-bg)] transition-all shadow-inner font-medium"
+                className="w-full px-6 py-4 bg-[var(--color-input-bg)]/80 backdrop-blur-sm text-[var(--color-text-main)] border border-[var(--color-glass-border)] rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/50 focus:bg-[var(--color-input-bg)] transition-all shadow-inner font-medium disabled:opacity-50"
                 required
                 placeholder="••••••••"
+                disabled={isLoading}
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-4 bg-[var(--color-primary)] text-[var(--color-background)] font-bold rounded-[2rem] transition-all shadow-lg hover:brightness-110 hover:-translate-y-0.5 hover:shadow-xl mt-4 active:scale-[0.98] text-lg"
+              disabled={isLoading}
+              className="w-full py-4 bg-[var(--color-primary)] text-[var(--color-background)] font-bold rounded-[2rem] transition-all shadow-lg hover:brightness-110 hover:-translate-y-0.5 hover:shadow-xl mt-4 active:scale-[0.98] text-lg disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-lg disabled:cursor-not-allowed flex items-center justify-center gap-3"
             >
-              {isLogin ? "Sign In" : "Sign Up"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  {isLogin ? "Signing in..." : "Creating account..."}
+                </>
+              ) : (
+                isLogin ? "Sign In" : "Sign Up"
+              )}
             </button>
           </form>
 
           <p className="text-center mt-8 text-sm text-[var(--color-text-secondary)]">
             {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => { setIsLogin(!isLogin); setError(""); }}
               className="text-[var(--color-primary)] hover:underline focus:outline-none font-bold"
+              disabled={isLoading}
             >
               {isLogin ? "Register" : "Login"}
             </button>
@@ -197,3 +213,4 @@ export default function AuthPage() {
     </div>
   );
 }
+

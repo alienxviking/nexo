@@ -30,13 +30,13 @@ export function setupSocketHandlers(io: SocketIOServer) {
     
     console.log(`User connected: ${userId} and joined room ${userId}`);
 
-    // Update DB status to online and broadcast
+    // Update DB status to online and broadcast to ALL connected clients
     prisma.user.update({
       where: { id: userId },
       data: { status: "ONLINE" }
     })
     .then(() => {
-      socket.broadcast.emit("user_status", { userId, status: "ONLINE", lastSeen: null });
+      io.emit("user_status", { userId, status: "ONLINE", lastSeen: null });
     })
     .catch(err => {
       if (err.code === 'P2025') {
@@ -213,11 +213,13 @@ export function setupSocketHandlers(io: SocketIOServer) {
       if (sockets.length === 0) {
         // Only mark offline if ALL sessions are gone
         try {
+          const now = new Date();
           await prisma.user.update({
             where: { id: userId },
-            data: { status: "OFFLINE", lastSeen: new Date() }
+            data: { status: "OFFLINE", lastSeen: now }
           });
-          socket.broadcast.emit("user_status", { userId, status: "OFFLINE", lastSeen: new Date() });
+          // io.emit instead of socket.broadcast — socket has already left rooms at this point
+          io.emit("user_status", { userId, status: "OFFLINE", lastSeen: now });
         } catch (err: any) {
           if (err.code === 'P2025') {
             console.warn(`User ${userId} disconnected but was not found in database.`);

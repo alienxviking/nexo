@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, memo, useCallback, type TouchEvent as Reac
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft, Reply } from "lucide-react";
-import { format, isToday, isYesterday } from "date-fns";
+import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import EmojiPicker, { Theme, Emoji, EmojiStyle } from "emoji-picker-react";
 import { getAvatarGradient } from "@/lib/avatarGradients";
 import { useDoodle } from "@/context/DoodleContext";
@@ -1055,7 +1055,7 @@ export default function ChatWindow({
               {currentActiveUser.name.charAt(0)}
             </div>
             {currentActiveUser.status === "ONLINE" && (
-              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[var(--color-chat-bg)] rounded-full shadow-sm"></span>
+              <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-[var(--color-chat-bg)] rounded-full shadow-sm animate-pulse-dot"></span>
             )}
           </div>
           <div>
@@ -1066,7 +1066,7 @@ export default function ChatWindow({
               ) : currentActiveUser.status === "ONLINE" ? (
                 <span className="text-green-500 font-medium">Online</span>
               ) : (
-                <span>Last seen {currentActiveUser.lastSeen ? format(new Date(currentActiveUser.lastSeen), "MMM d, h:mm a") : "recently"}</span>
+                <span>Last seen {currentActiveUser.lastSeen ? formatDistanceToNow(new Date(currentActiveUser.lastSeen), { addSuffix: true }) : "recently"}</span>
               )}
             </p>
           </div>
