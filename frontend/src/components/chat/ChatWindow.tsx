@@ -1096,7 +1096,7 @@ export default function ChatWindow({
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative">
+    <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative doodle-chat-bg">
       {/* Header */}
       <div className="flex items-center justify-between p-4 pt-10 md:p-6 md:pt-12 border-b-2 border-dashed border-[var(--color-border)] bg-[var(--color-sidebar)] z-20 sticky top-0">
         <div className="flex items-center space-x-2 md:space-x-3">
@@ -1188,7 +1188,7 @@ export default function ChatWindow({
       )}
 
       {/* Messages Area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-4 relative">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-4 relative z-10">
         {isLoadingMessages ? (
           <div className="flex flex-col space-y-4 animate-pulse">
             {/* Skeleton bubbles */}
