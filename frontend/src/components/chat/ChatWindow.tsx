@@ -612,7 +612,7 @@ const ChatInput = memo(({
   };
 
   return (
-    <div className="bg-[var(--color-sidebar)] border-t-2 border-dashed border-[var(--color-border)] p-4 py-5 md:p-6 md:py-8 z-20">
+    <div className="bg-[var(--color-sidebar)] border-t-2 border-dashed border-[var(--color-border)] p-4 py-6 md:p-6 md:py-8 z-20">
       {replyingTo && (
         <div className="flex items-center justify-between bg-[var(--color-bg)] rounded-[16px] p-4 mb-4 border-2 border-dashed border-[var(--color-primary)]/40 animate-in slide-in-from-bottom-2 duration-300 overflow-hidden">
           <div className="flex items-center space-x-3 overflow-hidden">
