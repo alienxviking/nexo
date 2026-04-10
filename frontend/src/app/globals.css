@@ -3,23 +3,23 @@
 /* --- THEME: Cute Light (Default) --- */
 :root,
 [data-theme="cute-light"] {
-  --background: #FFF8F9;
-  --foreground: #5C4033;
+  --background: #FFF9FA;
+  --foreground: #5C4044;
 
-  --bg: #FFF8F9;
+  --bg: #FFF9FA;
   --chat-bg: #FFFFFF;
-  --sidebar: #FFEDF2;
-  --primary: #FF69B4;
-  --primary-hover: #FF5DA8;
-  --sent-msg: #FF69B4;
-  --sent-msg-light: rgba(255, 105, 180, 0.12);
-  --recv-msg: #FFEDF2;
-  --recv-msg-border: #F5D5CC;
-  --text-main: #5C4033;
-  --text-secondary: #C4A08E;
-  --border: #F5D5CC;
-  --glass-bg: rgba(255, 248, 249, 0.75);
-  --glass-border: rgba(245, 213, 204, 0.6);
+  --sidebar: #FFE8ED;
+  --primary: #FF5E7E;
+  --primary-hover: #FF4D6D;
+  --sent-msg: #FF5E7E;
+  --sent-msg-light: rgba(255, 94, 126, 0.12);
+  --recv-msg: #FFE8ED;
+  --recv-msg-border: #F7D0D7;
+  --text-main: #5C4044;
+  --text-secondary: #C4A0A5;
+  --border: #F7D0D7;
+  --glass-bg: rgba(255, 249, 250, 0.75);
+  --glass-border: rgba(247, 208, 215, 0.6);
 
   --input-bg: #FFFFFF;
 
