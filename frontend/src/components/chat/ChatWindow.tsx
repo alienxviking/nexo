@@ -797,7 +797,9 @@ export default function ChatWindow({
     if (!socket) return;
 
     const handleReceiveMessage = (message: Message) => {
-      if (message.conversationId === conversationId) {
+      // Ignore our own messages to avoid duplicates/ordering glitches; 
+      // they are already added optimistically and confirmed via 'message_sent'
+      if (message.conversationId === conversationId && message.senderId !== currentUser?.id) {
         setMessages((prev) => [...prev, message]);
         socket.emit("mark_all_seen", {
           conversationId,
