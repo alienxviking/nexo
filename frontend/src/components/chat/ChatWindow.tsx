@@ -441,9 +441,10 @@ const ChatInput = memo(({
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  const prevEditingRef = useRef<Message | null>(null);
 
   useEffect(() => {
-    if (editingMessage) {
+    if (editingMessage && editingMessage.id !== prevEditingRef.current?.id) {
       setNewMessage(editingMessage.content);
       setTimeout(() => {
         if (messageInputRef.current) {
@@ -451,13 +452,17 @@ const ChatInput = memo(({
           messageInputRef.current.setSelectionRange(editingMessage.content.length, editingMessage.content.length);
         }
       }, 50);
-    } else {
-      // Clear input when edit is cancelled
+    } else if (!editingMessage && prevEditingRef.current) {
+      // Clear input ONLY when an edit was active and is now gone (cancelled/finished)
       setNewMessage("");
-      if (replyingTo) {
-        setTimeout(() => messageInputRef.current?.focus(), 50);
-      }
     }
+
+    // Always focus if replying started
+    if (replyingTo) {
+      setTimeout(() => messageInputRef.current?.focus(), 50);
+    }
+
+    prevEditingRef.current = editingMessage;
   }, [editingMessage, replyingTo]);
 
   const uploadFile = async (file: File): Promise<string | null> => {
