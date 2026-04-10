@@ -7,6 +7,7 @@
   --foreground: #5C4044;
 
   --bg: #FFF9FA;
+  --bg-gradient: radial-gradient(circle at 10% 20%, #FFF9FA 0%, #FFEBF0 100%);
   --chat-bg: #FFFFFF;
   --sidebar: #FFE8ED;
   --primary: #FF5E7E;
@@ -34,6 +35,7 @@
   --foreground: #F0D9E8;
 
   --bg: #0D0912;
+  --bg-gradient: none;
   --chat-bg: #0A070E;
   --sidebar: #120E1A;
   --primary: #FF69B4;
@@ -120,6 +122,11 @@ body[data-doodle="true"] button:active:not(.no-doodle) {
 }
 
 /* Cute Dotted Notebook Pattern (Exclusive to ChatWindow) */
+.doodle-chat-bg {
+  background: var(--bg-gradient, var(--bg));
+  position: relative;
+}
+
 .doodle-chat-bg::before {
   content: "";
   position: absolute;
