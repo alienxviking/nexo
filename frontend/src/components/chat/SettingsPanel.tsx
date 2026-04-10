@@ -18,7 +18,7 @@ export default function SettingsPanel({
 
   return (
     <div className="w-full md:w-80 h-full bg-[var(--color-sidebar)]/80 backdrop-blur-3xl border-r border-[var(--color-glass-border)] flex flex-col z-30 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)]">
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto no-scrollbar-mobile">
         {/* Profile Card */}
         <div className="p-6 pt-8 flex flex-col items-center text-center">
           <div className="w-20 h-20 rounded-[24px] border-4 border-dashed flex items-center justify-center font-black text-3xl shadow-xl mb-4" style={{ backgroundColor: 'var(--color-bg)', borderColor: getAvatarGradient(currentUser?.name || 'U'), color: getAvatarGradient(currentUser?.name || 'U') }}>

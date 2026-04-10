@@ -205,6 +205,17 @@ body[data-doodle="true"] button:active:not(.no-doodle) {
   background: var(--primary-hover);
 }
 
+/* Hide scrollbar on mobile */
+@media (max-width: 768px) {
+  .no-scrollbar-mobile::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar-mobile {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
 /* ===== ANIMATIONS ===== */
 
 /* Blob animation for login page */
