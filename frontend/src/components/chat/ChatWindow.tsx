@@ -861,7 +861,7 @@ export default function ChatWindow({
           if (atBottom) setTimeout(() => scrollToBottom(), 100);
         }
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
       }
     };
 
