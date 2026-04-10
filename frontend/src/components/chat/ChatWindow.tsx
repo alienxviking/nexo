@@ -189,8 +189,11 @@ const MessageItem = memo(({
         {/* Reply icon indicator on swipe */}
         {swipeX > 0 && (
           <div
-            className="absolute left-0 top-1/2 -translate-y-1/2 flex items-center justify-center z-0 pointer-events-none"
-            style={{ opacity: swipeProgress, transform: `translateY(-50%) scale(${0.5 + swipeProgress * 0.5})` }}
+            className="absolute left-0 top-1/2 flex items-center justify-center z-0 pointer-events-none"
+            style={{ 
+              opacity: swipeProgress, 
+              transform: `translateY(-50%) scale(${0.5 + swipeProgress * 0.5})` 
+            }}
           >
             <div className={`w-9 h-9 rounded-full flex items-center justify-center ${swipeProgress >= 1 ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-border)] text-[var(--color-text-secondary)]'} transition-colors duration-150`}>
               <Reply className="w-4 h-4" />
@@ -609,7 +612,7 @@ const ChatInput = memo(({
   };
 
   return (
-    <div className="bg-[var(--color-sidebar)] border-t-2 border-dashed border-[var(--color-border)] p-4 md:p-6 z-20">
+    <div className="bg-[var(--color-sidebar)] border-t-2 border-dashed border-[var(--color-border)] p-4 py-5 md:p-6 md:py-8 z-20">
       {replyingTo && (
         <div className="flex items-center justify-between bg-[var(--color-bg)] rounded-[16px] p-4 mb-4 border-2 border-dashed border-[var(--color-primary)]/40 animate-in slide-in-from-bottom-2 duration-300 overflow-hidden">
           <div className="flex items-center space-x-3 overflow-hidden">
@@ -1108,7 +1111,7 @@ export default function ChatWindow({
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative doodle-chat-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-7 pb-4 md:p-6 md:pt-8 md:pb-6 border-b-2 border-dashed border-[var(--color-border)] bg-[var(--color-sidebar)] z-20 sticky top-0">
+      <div className="flex items-center justify-between p-4 py-6 md:p-6 md:py-8 border-b-2 border-dashed border-[var(--color-border)] bg-[var(--color-sidebar)] z-20 sticky top-0">
         <div className="flex items-center space-x-2 md:space-x-3">
           {onBack && (
             <button
