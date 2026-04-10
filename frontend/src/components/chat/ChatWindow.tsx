@@ -1105,7 +1105,7 @@ export default function ChatWindow({
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--color-bg)] relative doodle-chat-bg">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-10 md:p-6 md:pt-12 border-b-2 border-dashed border-[var(--color-border)] bg-[var(--color-sidebar)] z-20 sticky top-0">
+      <div className="flex items-center justify-between p-4 pt-7 pb-4 md:p-6 md:pt-8 md:pb-6 border-b-2 border-dashed border-[var(--color-border)] bg-[var(--color-sidebar)] z-20 sticky top-0">
         <div className="flex items-center space-x-2 md:space-x-3">
           {onBack && (
             <button
