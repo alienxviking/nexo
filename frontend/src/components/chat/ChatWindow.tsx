@@ -704,7 +704,7 @@ const ChatInput = memo(({
           <button
             type="button"
             onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className={`w-12 h-12 md:w-14 md:h-14 flex items-center justify-center rounded-2xl md:rounded-[2rem] transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer 
+            className={`w-12 h-12 md:w-14 md:h-14 inline-flex items-center justify-center p-0 rounded-2xl md:rounded-[2rem] transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer 
               ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20' 
               : 'bg-[var(--color-chat-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] shadow-sm'} ${isDoodleMode ? 'doodle-border' : ''}`}
           >
