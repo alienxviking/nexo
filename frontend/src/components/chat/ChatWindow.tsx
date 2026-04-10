@@ -77,6 +77,9 @@ const MessageItem = memo(({
   highlightedMessageId: string | null;
 }) => {
   const isMe = msg.senderId === currentUser?.id;
+  const prevMsg = index > 0 ? messages[index - 1] : null;
+  const isGrouped = prevMsg && prevMsg.senderId === msg.senderId && !msg.isDeleted && !prevMsg.isDeleted && 
+    (new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 120000);
   const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
   const showTime = index === 0 || new Date(msg.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 300000; // 5 mins
   const isHighlighted = highlightedMessageId === msg.id;
@@ -160,7 +163,7 @@ const MessageItem = memo(({
   const swipeProgress = Math.min(swipeX / SWIPE_THRESHOLD, 1);
 
   return (
-    <div key={msg.id} id={`msg-${msg.id}`} className={`flex flex-col ${isMe ? "items-end" : "items-start"} relative group transition-colors duration-500 animate-msg-pop ${isHighlighted ? "bg-[var(--color-primary)]/5 rounded-xl -mx-2 px-2" : ""}`}>
+    <div key={msg.id} id={`msg-${msg.id}`} className={`flex flex-col ${isMe ? "items-end" : "items-start"} relative group transition-colors duration-500 animate-msg-pop ${isHighlighted ? "bg-[var(--color-primary)]/5 rounded-xl -mx-2 px-2" : ""} ${isGrouped && !showTime ? "mt-1.5" : "mt-4"}`}>
       {showTime && (
         <div className="flex items-center gap-3 my-4 self-center w-full max-w-xs">
           <div className="flex-1 h-px bg-[var(--color-border)]/50"></div>
@@ -1195,7 +1198,7 @@ export default function ChatWindow({
       )}
 
       {/* Messages Area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 space-y-4 relative z-10">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 relative z-10 flex flex-col">
         {isLoadingMessages ? (
           <div className="flex flex-col space-y-4 animate-pulse">
             {/* Skeleton bubbles */}
