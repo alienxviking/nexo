@@ -17,6 +17,32 @@ const isOnlyEmoji = (str: string) => {
   return emojiRegex.test(str.trim());
 };
 
+const URL_REGEX = /(https?:\/\/[^\s<>"']+)/gi;
+
+const linkifyText = (text: string) => {
+  const parts = text.split(URL_REGEX);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => {
+    // Use a fresh non-global regex for testing to avoid lastIndex issues
+    const isUrl = /^https?:\/\//i.test(part);
+    return isUrl ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="underline underline-offset-2 decoration-1 hover:opacity-80 transition-opacity break-all"
+        style={{ color: 'inherit' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    );
+  });
+};
+
 const getEmojiUnified = (emoji: string) => {
   return Array.from(emoji)
     .map(char => char.codePointAt(0)?.toString(16).toLowerCase())
@@ -292,7 +318,7 @@ const MessageItem = memo(({
                     <SafeEmoji key={i} char={char} size={64} />
                   ))
                 ) : (
-                  msg.content
+                  linkifyText(msg.content)
                 )}
               </div>
             )}
