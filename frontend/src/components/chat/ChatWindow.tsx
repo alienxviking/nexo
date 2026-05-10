@@ -292,7 +292,10 @@ const MessageItem = memo(({
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
-             {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
+              />
+            )}
+
+            {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
               <a href={msg.fileUrl.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className="group flex items-center space-x-3 p-3 rounded-2xl mb-2 border-2 border-dashed border-[var(--color-border)] transition-all hover:scale-[1.02] text-[var(--color-text-main)] hover:bg-[var(--color-bg)]/50 no-underline">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[var(--color-primary)]/10">
                   <FileIcon className="w-5 h-5 text-[var(--color-primary)]" />
