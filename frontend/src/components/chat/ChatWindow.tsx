@@ -286,12 +286,12 @@ const MessageItem = memo(({
 
             {!msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl && (
               <img
-                src={msg.fileUrl.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`}
+                src={msg.fileUrl.startsWith("data:") || msg.fileUrl.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`}
                 alt="Sent image"
                 className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain cursor-pointer hover:opacity-90 transition-opacity bg-[var(--color-border)]/10"
-                onClick={() => onImageClick(msg.fileUrl!.startsWith("http") ? msg.fileUrl! : `${API_URL}${msg.fileUrl}`)}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
+                onClick={() => onImageClick(msg.fileUrl!.startsWith("data:") || msg.fileUrl!.startsWith("http") ? msg.fileUrl! : `${API_URL}${msg.fileUrl}`)}
+                onLoad={(e) => {
+                  (e.target as HTMLImageElement).style.opacity = "1";
                 }}
               />
             )}
@@ -519,7 +519,7 @@ const ImageGroupBubble = memo(({
         >
           {group.map((msg, i) => {
             const isFirstOfThree = count === 3 && i === 0;
-            const fullUrl = msg.fileUrl?.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`;
+            const fullUrl = msg.fileUrl?.startsWith("data:") || msg.fileUrl?.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`;
             
             return (
               <div
@@ -533,8 +533,11 @@ const ImageGroupBubble = memo(({
                   src={fullUrl}
                   alt="Sent image"
                   className="w-full h-full object-cover transition-opacity group-hover/img:opacity-90"
+                  onLoad={(e) => {
+                    (e.target as HTMLImageElement).style.opacity = "1";
+                  }}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.opacity = "0.5";
+                    console.error("Image failed to load:", fullUrl.slice(0, 50) + "...");
                   }}
                 />
               </div>
@@ -623,24 +626,12 @@ const ChatInput = memo(({
   }, [editingMessage, replyingTo]);
 
   const uploadFile = async (file: File): Promise<string | null> => {
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch(`${API_URL}/api/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
-      const data = await res.json();
-      setUploading(false);
-      return data.url;
-    } catch (err) {
-      console.error("Upload error", err);
-      setUploading(false);
-      return null;
-    }
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleSend = (e: React.FormEvent) => {
@@ -720,24 +711,56 @@ const ChatInput = memo(({
     const files = e.target.files;
     if (!files || files.length === 0 || !socket) return;
     setShowAttachMenu(false);
+    setUploading(true);
 
-    // Send each file as a separate message
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const url = await uploadFile(file);
-      if (!url) continue;
-      socket.emit("send_message", {
-        conversationId,
-        receiverId: currentActiveUser.id,
-        content: file.name,
-        fileUrl: url,
-        type: msgType,
-        replyToId: i === 0 ? (replyingTo?.id || null) : null,
-      });
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Convert to Base64 for storage-less persistence
+        const base64 = await uploadFile(file);
+        if (!base64) continue;
+
+        const tempId = `temp-${Date.now()}-${i}`;
+        const now = new Date().toISOString();
+
+        // Optimistic UI for images/files
+        const optimisticMsg: Message = {
+          id: tempId,
+          content: file.name,
+          senderId: currentUser.id,
+          conversationId,
+          status: "SENT",
+          createdAt: now,
+          type: msgType,
+          fileUrl: base64,
+          replyTo: i === 0 && replyingTo ? {
+            id: replyingTo.id,
+            content: replyingTo.content,
+            sender: { id: replyingTo.senderId, name: replyingTo.senderId === currentUser.id ? currentUser.name : currentActiveUser.name }
+          } : null,
+        };
+        
+        setMessages(prev => [...prev, optimisticMsg]);
+        setTimeout(() => scrollToBottom(), 50);
+
+        socket.emit("send_message", {
+          conversationId,
+          receiverId: currentActiveUser.id,
+          content: file.name,
+          fileUrl: base64,
+          type: msgType,
+          replyToId: i === 0 ? (replyingTo?.id || null) : null,
+          tempId,
+        });
+      }
+    } catch (err) {
+      console.error("File processing error", err);
+    } finally {
+      setUploading(false);
+      setReplyingTo(null);
+      e.target.value = "";
     }
-    setReplyingTo(null);
-    // Reset input so same files can be selected again
-    e.target.value = "";
   };
 
   const toggleRecording = async () => {
