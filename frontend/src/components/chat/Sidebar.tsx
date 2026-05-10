@@ -79,15 +79,19 @@ export default function Sidebar({
     };
 
     const handleNewMessage = (message: any) => {
-      // Update last message in sidebar
+      // Update last message in sidebar and move conversation to top
       setConversations(prev => {
         const exists = prev.find(c => c.id === message.conversationId);
         if (exists) {
-          return prev.map(c =>
+          const updated = prev.map(c =>
             c.id === message.conversationId
               ? { ...c, messages: [message] }
               : c
           );
+          // Move the updated conversation to the top
+          const targetConv = updated.find(c => c.id === message.conversationId);
+          const rest = updated.filter(c => c.id !== message.conversationId);
+          return targetConv ? [targetConv, ...rest] : updated;
         }
         // If conversation doesn't exist in list, re-fetch
         fetchConversations();
@@ -123,12 +127,32 @@ export default function Sidebar({
       }
     };
 
+    // Handle own sent messages to update sidebar preview
+    const handleMessageSent = (message: any) => {
+      setConversations(prev => {
+        const exists = prev.find(c => c.id === message.conversationId);
+        if (exists) {
+          const updated = prev.map(c =>
+            c.id === message.conversationId
+              ? { ...c, messages: [message] }
+              : c
+          );
+          const targetConv = updated.find(c => c.id === message.conversationId);
+          const rest = updated.filter(c => c.id !== message.conversationId);
+          return targetConv ? [targetConv, ...rest] : updated;
+        }
+        return prev;
+      });
+    };
+
     socket.on("user_status", handleUserStatus);
     socket.on("receive_message", handleNewMessage);
+    socket.on("message_sent", handleMessageSent);
 
     return () => {
       socket.off("user_status", handleUserStatus);
       socket.off("receive_message", handleNewMessage);
+      socket.off("message_sent", handleMessageSent);
     }
   }, [socket, activeId, currentUser?.id, conversations]);
 
