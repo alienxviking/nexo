@@ -848,8 +848,15 @@ export default function ChatWindow({
         const filtered = tempId ? prev.filter(m => m.id !== tempId) : prev;
         return [...filtered, message];
       });
-      // Always scroll to bottom for own messages
-      setTimeout(() => scrollToBottom(), 100);
+      // Only scroll to bottom if user is near the bottom (don't force scroll if they scrolled up)
+      const container = messagesContainerRef.current;
+      if (container) {
+        const threshold = 150;
+        const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+        if (atBottom) {
+          setTimeout(() => scrollToBottom(), 100);
+        }
+      }
     };
 
     const handleMessageDelivered = ({ messageId }: any) => {
