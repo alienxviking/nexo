@@ -61,7 +61,8 @@ const MessageItem = memo(({
   startEdit,
   setMessageToDelete,
   scrollToMessage,
-  highlightedMessageId
+  highlightedMessageId,
+  onImageClick
 }: {
   msg: Message;
   currentUser: any;
@@ -75,6 +76,7 @@ const MessageItem = memo(({
   setMessageToDelete: (id: string) => void;
   scrollToMessage: (id: string) => void;
   highlightedMessageId: string | null;
+  onImageClick: (src: string) => void;
 }) => {
   const isMe = msg.senderId === currentUser?.id;
   const prevMsg = index > 0 ? messages[index - 1] : null;
@@ -254,7 +256,12 @@ const MessageItem = memo(({
             )}
 
             {!msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl && (
-              <img src={`${API_URL}${msg.fileUrl}`} alt="Sent image" className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain" />
+              <img
+                src={`${API_URL}${msg.fileUrl}`}
+                alt="Sent image"
+                className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => onImageClick(`${API_URL}${msg.fileUrl}`)}
+              />
             )}
 
             {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
@@ -790,6 +797,7 @@ export default function ChatWindow({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const newMsgToastTimeout = useRef<NodeJS.Timeout | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentActiveUser(activeUser);
@@ -1241,6 +1249,7 @@ export default function ChatWindow({
             setMessageToDelete={setMessageToDelete}
             scrollToMessage={scrollToMessage}
             highlightedMessageId={highlightedMessageId}
+            onImageClick={(src) => setLightboxImage(src)}
           />
         ))}
         {isTyping && (
@@ -1322,6 +1331,27 @@ export default function ChatWindow({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Image Lightbox */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer animate-in fade-in duration-200"
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-6 right-6 text-white/80 hover:text-white transition-colors z-10"
+          >
+            <X className="w-8 h-8" />
+          </button>
+          <img
+            src={lightboxImage}
+            alt="Enlarged"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
