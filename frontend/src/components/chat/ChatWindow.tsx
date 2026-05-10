@@ -285,7 +285,9 @@ const MessageItem = memo(({
 
             {(msg.type === "TEXT" || msg.isDeleted) && (
               <div className={`leading-relaxed break-words ${isEmojiOnly ? "flex flex-wrap gap-2 py-3 justify-center min-h-[4rem]" : "text-[15px]"}`}>
-                {isEmojiOnly ? (
+                {msg.isDeleted ? (
+                  "This message was deleted"
+                ) : isEmojiOnly ? (
                   msg.content.match(/\p{Extended_Pictographic}\uFE0F?(?:\u200d\p{Extended_Pictographic}\uFE0F?)*|\p{Emoji_Presentation}|\p{Emoji_Component}/gu)?.map((char, i) => (
                     <SafeEmoji key={i} char={char} size={64} />
                   ))

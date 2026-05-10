@@ -188,7 +188,7 @@ export function setupSocketHandlers(io: SocketIOServer) {
       try {
         const message = await prisma.message.update({
           where: { id: messageId },
-          data: { isDeleted: true, content: "This message was deleted" },
+          data: { isDeleted: true },
           include: {
             sender: { select: { id: true, name: true, avatarUrl: true } },
             replyTo: { select: { id: true, content: true, sender: { select: { id: true, name: true } } } },
@@ -310,7 +310,7 @@ export function setupSocketHandlers(io: SocketIOServer) {
       for (const msg of destructMessages) {
         const deletedMsg = await prisma.message.update({
           where: { id: msg.id },
-          data: { isDeleted: true, content: "This message self-destructed" },
+          data: { isDeleted: true },
           include: {
             sender: { select: { id: true, name: true, avatarUrl: true } },
             replyTo: { select: { id: true, content: true, sender: { select: { id: true, name: true } } } },
