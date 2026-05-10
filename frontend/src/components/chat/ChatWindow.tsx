@@ -3,7 +3,8 @@
 import { useEffect, useState, useRef, memo, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
-import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft, Reply } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft, Reply, MessageSquare } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import EmojiPicker, { Theme, Emoji, EmojiStyle } from "emoji-picker-react";
 import { getAvatarGradient } from "@/lib/avatarGradients";
@@ -448,7 +449,8 @@ interface Message {
   fileUrl?: string;
 }
 
-// --- Image grouping logic ---
+
+
 const IMAGE_GROUP_THRESHOLD = 30000; // 30 seconds
 
 /** Returns a Map from the first message index of each image group to the array of messages in that group */
@@ -458,8 +460,7 @@ const computeImageGroups = (messages: Message[]): Map<number, Message[]> => {
   while (i < messages.length) {
     const msg = messages[i];
     if (msg.type === "IMAGE" && msg.fileUrl && !msg.isDeleted) {
-      const groupStart = i;
-      const group: Message[] = [msg];
+      const group = [msg];
       let j = i + 1;
       while (j < messages.length) {
         const next = messages[j];
@@ -477,12 +478,12 @@ const computeImageGroups = (messages: Message[]): Map<number, Message[]> => {
         }
       }
       if (group.length >= 2) {
-        groups.set(groupStart, group);
+        groups.set(i, group);
+        i = j; // skip messages in this group
+        continue;
       }
-      i = j;
-    } else {
-      i++;
     }
+    i++;
   }
   return groups;
 };
