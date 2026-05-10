@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, memo, useCallback, type TouchEvent as ReactTouchEvent } from "react";
+import { useEffect, useState, useRef, memo, useCallback, useMemo, type TouchEvent as ReactTouchEvent } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft, Reply } from "lucide-react";
@@ -444,6 +444,112 @@ interface Message {
   type?: "TEXT" | "IMAGE" | "FILE" | "VOICE";
   fileUrl?: string;
 }
+
+// --- Image grouping logic ---
+const IMAGE_GROUP_THRESHOLD = 30000; // 30 seconds
+
+/** Returns a Map from the first message index of each image group to the array of messages in that group */
+const computeImageGroups = (messages: Message[]): Map<number, Message[]> => {
+  const groups = new Map<number, Message[]>();
+  let i = 0;
+  while (i < messages.length) {
+    const msg = messages[i];
+    if (msg.type === "IMAGE" && msg.fileUrl && !msg.isDeleted) {
+      const groupStart = i;
+      const group: Message[] = [msg];
+      let j = i + 1;
+      while (j < messages.length) {
+        const next = messages[j];
+        if (
+          next.type === "IMAGE" &&
+          next.fileUrl &&
+          !next.isDeleted &&
+          next.senderId === msg.senderId &&
+          new Date(next.createdAt).getTime() - new Date(messages[j - 1].createdAt).getTime() < IMAGE_GROUP_THRESHOLD
+        ) {
+          group.push(next);
+          j++;
+        } else {
+          break;
+        }
+      }
+      if (group.length >= 2) {
+        groups.set(groupStart, group);
+      }
+      i = j;
+    } else {
+      i++;
+    }
+  }
+  return groups;
+};
+
+const getImageGridClass = (count: number) => {
+  if (count === 2) return "grid-cols-2";
+  if (count === 3) return "grid-cols-2";
+  return "grid-cols-2";
+};
+
+const ImageGroupBubble = memo(({
+  group,
+  currentUser,
+  onImageClick,
+}: {
+  group: Message[];
+  currentUser: any;
+  onImageClick: (src: string) => void;
+}) => {
+  const isMe = group[0].senderId === currentUser?.id;
+  const lastMsg = group[group.length - 1];
+  const count = group.length;
+
+  return (
+    <div
+      id={`msg-${group[0].id}`}
+      className={`flex flex-col ${isMe ? "items-end" : "items-start"} mt-4 animate-msg-pop`}
+    >
+      <div className={`w-fit max-w-[75%] md:max-w-[70%]`}>
+        <div
+          className={`grid ${getImageGridClass(count)} gap-1 rounded-2xl overflow-hidden`}
+          style={{ maxWidth: count === 1 ? "280px" : "320px" }}
+        >
+          {group.map((msg, i) => {
+            // For 3 images: first image spans full width
+            const isFirstOfThree = count === 3 && i === 0;
+            return (
+              <div
+                key={msg.id}
+                id={`msg-${msg.id}`}
+                className={`relative overflow-hidden cursor-pointer group/img ${isFirstOfThree ? "col-span-2" : ""}`}
+                style={{ aspectRatio: isFirstOfThree ? "2/1" : "1/1" }}
+                onClick={() => onImageClick(`${API_URL}${msg.fileUrl}`)}
+              >
+                <img
+                  src={`${API_URL}${msg.fileUrl}`}
+                  alt="Sent image"
+                  className="w-full h-full object-cover transition-opacity group-hover/img:opacity-90"
+                />
+              </div>
+            );
+          })}
+        </div>
+        {/* Time + status for the last image in the group */}
+        <div className="flex items-center justify-end mt-1 space-x-1 text-[var(--color-text-secondary)]">
+          <span className="text-[10px] opacity-80">
+            {format(new Date(lastMsg.createdAt), "h:mm a")}
+          </span>
+          {isMe && (
+            <span className="text-xs ml-1 flex items-center font-bold">
+              {lastMsg.status === "SENT" && <Check className="w-3.5 h-3.5 opacity-40" />}
+              {lastMsg.status === "DELIVERED" && <CheckCheck className="w-3.5 h-3.5 opacity-40" />}
+              {lastMsg.status === "SEEN" && <CheckCheck className="w-3.5 h-3.5 text-[var(--color-primary)] opacity-100" />}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
 const ChatInput = memo(({
   socket,
@@ -1278,24 +1384,52 @@ export default function ChatWindow({
           </div>
         ) : (
           <>
-            {messages.map((msg, index) => (
-          <MessageItem
-            key={msg.id}
-            msg={msg}
-            currentUser={currentUser}
-            currentActiveUser={currentActiveUser}
-            index={index}
-            messages={messages}
-            activeMenu={activeMenu}
-            addReaction={addReaction}
-            startReply={startReply}
-            startEdit={startEdit}
-            setMessageToDelete={setMessageToDelete}
-            scrollToMessage={scrollToMessage}
-            highlightedMessageId={highlightedMessageId}
-            onImageClick={(src) => setLightboxImage(src)}
-          />
-        ))}
+            {(() => {
+              const imageGroups = computeImageGroups(messages);
+              // Build a set of indices that are part of a group but NOT the first
+              const skipIndices = new Set<number>();
+              for (const [startIdx, group] of imageGroups) {
+                for (let k = 1; k < group.length; k++) {
+                  skipIndices.add(startIdx + k);
+                }
+              }
+              return messages.map((msg, index) => {
+                // Skip images that are continuation of a group
+                if (skipIndices.has(index)) return null;
+
+                // If this index starts an image group, render the group
+                if (imageGroups.has(index)) {
+                  return (
+                    <ImageGroupBubble
+                      key={`img-group-${msg.id}`}
+                      group={imageGroups.get(index)!}
+                      currentUser={currentUser}
+                      onImageClick={(src) => setLightboxImage(src)}
+                    />
+                  );
+                }
+
+                // Normal single message
+                return (
+                  <MessageItem
+                    key={msg.id}
+                    msg={msg}
+                    currentUser={currentUser}
+                    currentActiveUser={currentActiveUser}
+                    index={index}
+                    messages={messages}
+                    activeMenu={activeMenu}
+                    addReaction={addReaction}
+                    startReply={startReply}
+                    startEdit={startEdit}
+                    setMessageToDelete={setMessageToDelete}
+                    scrollToMessage={scrollToMessage}
+                    highlightedMessageId={highlightedMessageId}
+                    onImageClick={(src) => setLightboxImage(src)}
+                  />
+                );
+              });
+            })()}
         {isTyping && (
           <div className="flex flex-col items-start space-y-1 mb-2 ml-2 animate-in fade-in duration-300">
             <span className="text-[10px] text-[var(--color-text-secondary)] font-medium animate-pulse ml-2">
