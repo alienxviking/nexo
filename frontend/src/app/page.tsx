@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { MessageSquare, Sparkles, Shield, Zap, Loader2, Eye, EyeOff } from "lucide-react";
