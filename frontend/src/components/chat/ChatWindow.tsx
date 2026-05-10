@@ -109,6 +109,7 @@ const MessageItem = memo(({
   const isGrouped = prevMsg && prevMsg.senderId === msg.senderId && !msg.isDeleted && !prevMsg.isDeleted && 
     (new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 120000);
   const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
+  const isImageOnly = !msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl;
   const showTime = index === 0 || new Date(msg.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 300000; // 5 mins
   const isHighlighted = highlightedMessageId === msg.id;
 
@@ -264,7 +265,8 @@ const MessageItem = memo(({
           )}
 
           <div
-            className={`w-fit max-w-[75%] md:max-w-[70%] transition-all duration-300 ${isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3"} ${msg.isDeleted ? "bg-transparent border-2 border-dashed border-[var(--color-border)] rounded-[20px] text-[var(--color-text-secondary)] italic" :
+            className={`w-fit max-w-[75%] md:max-w-[70%] transition-all duration-300 ${isImageOnly ? "p-1" : isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3"} ${msg.isDeleted ? "bg-transparent border-2 border-dashed border-[var(--color-border)] rounded-[20px] text-[var(--color-text-secondary)] italic" :
+              isImageOnly ? "bg-transparent rounded-[20px]" :
               isEmojiOnly ? "bg-transparent shadow-none" :
                 isMe
                   ? 'bubble-cute-me'
@@ -601,20 +603,27 @@ const ChatInput = memo(({
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, msgType: "IMAGE" | "FILE") => {
-    const file = e.target.files?.[0];
-    if (!file || !socket) return;
+    const files = e.target.files;
+    if (!files || files.length === 0 || !socket) return;
     setShowAttachMenu(false);
-    const url = await uploadFile(file);
-    if (!url) return;
-    socket.emit("send_message", {
-      conversationId,
-      receiverId: currentActiveUser.id,
-      content: file.name,
-      fileUrl: url,
-      type: msgType,
-      replyToId: replyingTo?.id || null,
-    });
+
+    // Send each file as a separate message
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const url = await uploadFile(file);
+      if (!url) continue;
+      socket.emit("send_message", {
+        conversationId,
+        receiverId: currentActiveUser.id,
+        content: file.name,
+        fileUrl: url,
+        type: msgType,
+        replyToId: i === 0 ? (replyingTo?.id || null) : null,
+      });
+    }
     setReplyingTo(null);
+    // Reset input so same files can be selected again
+    e.target.value = "";
   };
 
   const toggleRecording = async () => {
@@ -783,7 +792,7 @@ const ChatInput = memo(({
 
 
         <input type="file" ref={fileInputRef} className="hidden" onChange={(e) => handleFileSelect(e, "FILE")} />
-        <input type="file" ref={imageInputRef} accept="image/*" className="hidden" onChange={(e) => handleFileSelect(e, "IMAGE")} />
+        <input type="file" ref={imageInputRef} accept="image/*" multiple className="hidden" onChange={(e) => handleFileSelect(e, "IMAGE")} />
       </form>
     </div>
   );
