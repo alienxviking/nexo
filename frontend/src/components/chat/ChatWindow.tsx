@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, memo, useCallback, useMemo, type TouchEven
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import { useRouter } from "next/navigation";
-import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft, Reply, MessageSquare } from "lucide-react";
+import { Send, Image as ImageIcon, Paperclip, MoreVertical, Check, CheckCheck, Mic, Square, File as FileIcon, Play, Pause, Search, Clock, Bomb, X, Smile, Plus, ArrowDown, Download, ChevronLeft, Reply, MessageSquare, Loader2 } from "lucide-react";
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns";
 import EmojiPicker, { Theme, Emoji, EmojiStyle } from "emoji-picker-react";
 import { getAvatarGradient } from "@/lib/avatarGradients";
@@ -76,6 +76,42 @@ const SafeEmoji = ({ char, size }: { char: string; size: number }) => {
   );
 };
 
+const ImageWithLoader = ({ src, alt, className, onClick }: { src: string; alt: string; className?: string; onClick?: () => void }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className="relative w-full h-full min-h-[150px] flex items-center justify-center bg-[var(--color-border)]/5">
+      {!isLoaded && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-black/5 backdrop-blur-[2px]">
+          <div className="relative w-12 h-12 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-[var(--color-primary)]/20"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-[var(--color-primary)] border-t-transparent animate-spin"></div>
+            <Download className="w-5 h-5 text-[var(--color-primary)] animate-bounce" />
+          </div>
+          <span className="mt-2 text-[10px] font-bold uppercase tracking-wider text-[var(--color-primary)] opacity-80">Loading...</span>
+        </div>
+      )}
+      {error ? (
+        <div className="flex flex-col items-center justify-center p-6 text-[var(--color-text-secondary)] opacity-50">
+          <ImageIcon className="w-10 h-10 mb-2 opacity-20" />
+          <span className="text-[10px] font-bold uppercase">Load Failed</span>
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          className={`${className} ${isLoaded ? "opacity-100 scale-100" : "opacity-0 scale-95"} transition-all duration-500 ease-out`}
+          onLoad={() => setIsLoaded(true)}
+          onError={() => setError(true)}
+          onClick={onClick}
+          loading="lazy"
+        />
+      )}
+    </div>
+  );
+};
+
 const MessageItem = memo(({
   msg,
   currentUser,
@@ -107,7 +143,7 @@ const MessageItem = memo(({
 }) => {
   const isMe = msg.senderId === currentUser?.id;
   const prevMsg = index > 0 ? messages[index - 1] : null;
-  const isGrouped = prevMsg && prevMsg.senderId === msg.senderId && !msg.isDeleted && !prevMsg.isDeleted &&
+  const isGrouped = prevMsg && prevMsg.senderId === msg.senderId && !msg.isDeleted && !prevMsg.isDeleted && 
     (new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 120000);
   const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
   const isImageOnly = !msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl;
@@ -220,9 +256,9 @@ const MessageItem = memo(({
         {swipeX > 0 && (
           <div
             className="absolute left-0 top-1/2 flex items-center justify-center z-0 pointer-events-none"
-            style={{
-              opacity: swipeProgress,
-              transform: `translateY(-50%) scale(${0.5 + swipeProgress * 0.5})`
+            style={{ 
+              opacity: swipeProgress, 
+              transform: `translateY(-50%) scale(${0.5 + swipeProgress * 0.5})` 
             }}
           >
             <div className={`w-9 h-9 rounded-full flex items-center justify-center ${swipeProgress >= 1 ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-border)] text-[var(--color-text-secondary)]'} transition-colors duration-150`}>
@@ -268,10 +304,10 @@ const MessageItem = memo(({
           <div
             className={`w-fit max-w-[75%] md:max-w-[70%] transition-all duration-300 ${isImageOnly ? "p-1" : isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3"} ${msg.isDeleted ? "bg-transparent border-2 border-dashed border-[var(--color-border)] rounded-[20px] text-[var(--color-text-secondary)] italic" :
               isImageOnly ? "bg-transparent rounded-[20px]" :
-                isEmojiOnly ? "bg-transparent shadow-none" :
-                  isMe
-                    ? 'bubble-cute-me'
-                    : 'bubble-cute-other'
+              isEmojiOnly ? "bg-transparent shadow-none" :
+                isMe
+                  ? 'bubble-cute-me'
+                  : 'bubble-cute-other'
               }`}
           >
             {msg.replyTo && !msg.isDeleted && (
@@ -285,15 +321,14 @@ const MessageItem = memo(({
             )}
 
             {!msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl && (
-              <img
-                src={msg.fileUrl.startsWith("data:") || msg.fileUrl.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`}
-                alt="Sent image"
-                className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain cursor-pointer hover:opacity-90 transition-opacity bg-[var(--color-border)]/10"
-                onClick={() => onImageClick(msg.fileUrl!.startsWith("data:") || msg.fileUrl!.startsWith("http") ? msg.fileUrl! : `${API_URL}${msg.fileUrl}`)}
-                onLoad={(e) => {
-                  (e.target as HTMLImageElement).style.opacity = "1";
-                }}
-              />
+              <div className="relative group/img max-w-full h-auto max-h-60 rounded-xl mb-2 overflow-hidden bg-[var(--color-border)]/10">
+                <ImageWithLoader
+                  src={msg.fileUrl.startsWith("data:") || msg.fileUrl.startsWith("http") ? msg.fileUrl : `${API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL}${msg.fileUrl.startsWith("/") ? "" : "/"}${msg.fileUrl}`}
+                  alt="Sent image"
+                  className="max-w-full h-auto max-h-60 object-contain cursor-pointer hover:opacity-95 transition-all"
+                  onClick={() => onImageClick(msg.fileUrl!.startsWith("data:") || msg.fileUrl!.startsWith("http") ? msg.fileUrl! : `${API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL}${msg.fileUrl!.startsWith("/") ? "" : "/"}${msg.fileUrl}`)}
+                />
+              </div>
             )}
 
             {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
@@ -520,7 +555,7 @@ const ImageGroupBubble = memo(({
           {group.map((msg, i) => {
             const isFirstOfThree = count === 3 && i === 0;
             const fullUrl = msg.fileUrl?.startsWith("data:") || msg.fileUrl?.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`;
-
+            
             return (
               <div
                 key={msg.id}
@@ -529,17 +564,14 @@ const ImageGroupBubble = memo(({
                 style={{ aspectRatio: isFirstOfThree ? "2/1" : "1/1" }}
                 onClick={() => onImageClick(fullUrl)}
               >
-                <img
-                  src={fullUrl}
-                  alt="Sent image"
-                  className="w-full h-full object-cover transition-opacity group-hover/img:opacity-90"
-                  onLoad={(e) => {
-                    (e.target as HTMLImageElement).style.opacity = "1";
-                  }}
-                  onError={(e) => {
-                    console.error("Image failed to load:", fullUrl.slice(0, 50) + "...");
-                  }}
-                />
+                <div className="w-full h-full relative bg-[var(--color-border)]/10">
+                  <ImageWithLoader
+                    src={fullUrl}
+                    alt="Sent image"
+                    className="w-full h-full object-cover transition-opacity group-hover/img:opacity-90"
+                    onClick={() => onImageClick(fullUrl)}
+                  />
+                </div>
               </div>
             );
           })}
@@ -711,24 +743,56 @@ const ChatInput = memo(({
     const files = e.target.files;
     if (!files || files.length === 0 || !socket) return;
     setShowAttachMenu(false);
+    setUploading(true);
 
-    // Send each file as a separate message
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const url = await uploadFile(file);
-      if (!url) continue;
-      socket.emit("send_message", {
-        conversationId,
-        receiverId: currentActiveUser.id,
-        content: file.name,
-        fileUrl: url,
-        type: msgType,
-        replyToId: i === 0 ? (replyingTo?.id || null) : null,
-      });
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Convert to Base64 for storage-less persistence
+        const base64 = await uploadFile(file);
+        if (!base64) continue;
+
+        const tempId = `temp-${Date.now()}-${i}`;
+        const now = new Date().toISOString();
+
+        // Optimistic UI for images/files
+        const optimisticMsg: Message = {
+          id: tempId,
+          content: file.name,
+          senderId: currentUser.id,
+          conversationId,
+          status: "SENT",
+          createdAt: now,
+          type: msgType,
+          fileUrl: base64,
+          replyTo: i === 0 && replyingTo ? {
+            id: replyingTo.id,
+            content: replyingTo.content,
+            sender: { id: replyingTo.senderId, name: replyingTo.senderId === currentUser.id ? currentUser.name : currentActiveUser.name }
+          } : null,
+        };
+        
+        setMessages(prev => [...prev, optimisticMsg]);
+        setTimeout(() => scrollToBottom(), 50);
+
+        socket.emit("send_message", {
+          conversationId,
+          receiverId: currentActiveUser.id,
+          content: file.name,
+          fileUrl: base64,
+          type: msgType,
+          replyToId: i === 0 ? (replyingTo?.id || null) : null,
+          tempId,
+        });
+      }
+    } catch (err) {
+      console.error("File processing error", err);
+    } finally {
+      setUploading(false);
+      setReplyingTo(null);
+      e.target.value = "";
     }
-    setReplyingTo(null);
-    // Reset input so same files can be selected again
-    e.target.value = "";
   };
 
   const toggleRecording = async () => {
@@ -853,8 +917,8 @@ const ChatInput = memo(({
           <button
             type="button"
             onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className={`w-12 h-12 md:w-14 md:h-14 inline-flex items-center justify-center p-0 rounded-2xl md:rounded-[2rem] transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer
-              ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20'
+            className={`w-12 h-12 md:w-14 md:h-14 inline-flex items-center justify-center p-0 rounded-2xl md:rounded-[2rem] transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer 
+              ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20' 
               : 'bg-[var(--color-chat-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] shadow-sm'} ${isDoodleMode ? 'doodle-border' : ''}`}
           >
             <Plus className={`w-6 h-6 transition-transform duration-200 ${showAttachMenu ? 'rotate-45' : ''} ${isDoodleMode && (showAttachMenu || scheduleTime || selfDestructTimer) ? 'animate-wobbly' : ''}`} />
@@ -1135,7 +1199,7 @@ export default function ChatWindow({
       const data = await res.json();
       setMessages(data);
       setIsLoadingMessages(false);
-
+      
       // Wait for React to render messages before scrolling
       requestAnimationFrame(() => {
         setTimeout(() => {
@@ -1197,7 +1261,7 @@ export default function ChatWindow({
     if (!socket || !currentUser) return;
 
     let backupMessages: Message[] = [];
-
+    
     // Optimistic UI update
     setMessages(prev => {
       backupMessages = prev;
@@ -1205,7 +1269,7 @@ export default function ChatWindow({
         if (msg.id === msgId) {
           const reactions = msg.reactions || [];
           const existing = reactions.find(r => r.user?.id === currentUser.id);
-
+          
           if (existing && existing.emoji === emoji) {
             return { ...msg, reactions: reactions.filter(r => r.id !== existing.id) };
           } else if (existing) {
@@ -1393,7 +1457,7 @@ export default function ChatWindow({
                   skipIndices.add(startIdx + k);
                 }
               }
-
+              
               return messages.map((msg, index) => {
                 if (skipIndices.has(index)) return null;
 
@@ -1428,20 +1492,20 @@ export default function ChatWindow({
                 );
               });
             })()}
-            {isTyping && (
-              <div className="flex flex-col items-start space-y-1 mb-2 ml-2 animate-in fade-in duration-300">
-                <span className="text-[10px] text-[var(--color-text-secondary)] font-medium animate-pulse ml-2">
-                  {currentActiveUser.name} is typing...
-                </span>
-                <div className="bg-[var(--color-glass-bg)] backdrop-blur-md border border-[var(--color-glass-border)] text-[var(--color-text-main)] px-3 py-2 rounded-[2rem] rounded-bl-sm shadow-sm flex items-center space-x-1 w-max">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "0ms" }}></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "150ms" }}></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "300ms" }}></span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </>
+        {isTyping && (
+          <div className="flex flex-col items-start space-y-1 mb-2 ml-2 animate-in fade-in duration-300">
+            <span className="text-[10px] text-[var(--color-text-secondary)] font-medium animate-pulse ml-2">
+              {currentActiveUser.name} is typing...
+            </span>
+            <div className="bg-[var(--color-glass-bg)] backdrop-blur-md border border-[var(--color-glass-border)] text-[var(--color-text-main)] px-3 py-2 rounded-[2rem] rounded-bl-sm shadow-sm flex items-center space-x-1 w-max">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "0ms" }}></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "150ms" }}></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "300ms" }}></span>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+        </>
         )}
       </div>
 
