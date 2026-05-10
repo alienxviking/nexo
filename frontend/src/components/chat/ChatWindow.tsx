@@ -107,7 +107,7 @@ const MessageItem = memo(({
 }) => {
   const isMe = msg.senderId === currentUser?.id;
   const prevMsg = index > 0 ? messages[index - 1] : null;
-  const isGrouped = prevMsg && prevMsg.senderId === msg.senderId && !msg.isDeleted && !prevMsg.isDeleted && 
+  const isGrouped = prevMsg && prevMsg.senderId === msg.senderId && !msg.isDeleted && !prevMsg.isDeleted &&
     (new Date(msg.createdAt).getTime() - new Date(prevMsg.createdAt).getTime() < 120000);
   const isEmojiOnly = !msg.isDeleted && msg.type === "TEXT" && isOnlyEmoji(msg.content);
   const isImageOnly = !msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl;
@@ -220,9 +220,9 @@ const MessageItem = memo(({
         {swipeX > 0 && (
           <div
             className="absolute left-0 top-1/2 flex items-center justify-center z-0 pointer-events-none"
-            style={{ 
-              opacity: swipeProgress, 
-              transform: `translateY(-50%) scale(${0.5 + swipeProgress * 0.5})` 
+            style={{
+              opacity: swipeProgress,
+              transform: `translateY(-50%) scale(${0.5 + swipeProgress * 0.5})`
             }}
           >
             <div className={`w-9 h-9 rounded-full flex items-center justify-center ${swipeProgress >= 1 ? 'bg-[var(--color-primary)] text-white' : 'bg-[var(--color-border)] text-[var(--color-text-secondary)]'} transition-colors duration-150`}>
@@ -268,10 +268,10 @@ const MessageItem = memo(({
           <div
             className={`w-fit max-w-[75%] md:max-w-[70%] transition-all duration-300 ${isImageOnly ? "p-1" : isEmojiOnly ? "p-0" : "px-4 py-2.5 md:px-5 md:py-3"} ${msg.isDeleted ? "bg-transparent border-2 border-dashed border-[var(--color-border)] rounded-[20px] text-[var(--color-text-secondary)] italic" :
               isImageOnly ? "bg-transparent rounded-[20px]" :
-              isEmojiOnly ? "bg-transparent shadow-none" :
-                isMe
-                  ? 'bubble-cute-me'
-                  : 'bubble-cute-other'
+                isEmojiOnly ? "bg-transparent shadow-none" :
+                  isMe
+                    ? 'bubble-cute-me'
+                    : 'bubble-cute-other'
               }`}
           >
             {msg.replyTo && !msg.isDeleted && (
@@ -520,7 +520,7 @@ const ImageGroupBubble = memo(({
           {group.map((msg, i) => {
             const isFirstOfThree = count === 3 && i === 0;
             const fullUrl = msg.fileUrl?.startsWith("data:") || msg.fileUrl?.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`;
-            
+
             return (
               <div
                 key={msg.id}
@@ -711,56 +711,24 @@ const ChatInput = memo(({
     const files = e.target.files;
     if (!files || files.length === 0 || !socket) return;
     setShowAttachMenu(false);
-    setUploading(true);
 
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Convert to Base64 for storage-less persistence
-        const base64 = await uploadFile(file);
-        if (!base64) continue;
-
-        const tempId = `temp-${Date.now()}-${i}`;
-        const now = new Date().toISOString();
-
-        // Optimistic UI for images/files
-        const optimisticMsg: Message = {
-          id: tempId,
-          content: file.name,
-          senderId: currentUser.id,
-          conversationId,
-          status: "SENT",
-          createdAt: now,
-          type: msgType,
-          fileUrl: base64,
-          replyTo: i === 0 && replyingTo ? {
-            id: replyingTo.id,
-            content: replyingTo.content,
-            sender: { id: replyingTo.senderId, name: replyingTo.senderId === currentUser.id ? currentUser.name : currentActiveUser.name }
-          } : null,
-        };
-        
-        setMessages(prev => [...prev, optimisticMsg]);
-        setTimeout(() => scrollToBottom(), 50);
-
-        socket.emit("send_message", {
-          conversationId,
-          receiverId: currentActiveUser.id,
-          content: file.name,
-          fileUrl: base64,
-          type: msgType,
-          replyToId: i === 0 ? (replyingTo?.id || null) : null,
-          tempId,
-        });
-      }
-    } catch (err) {
-      console.error("File processing error", err);
-    } finally {
-      setUploading(false);
-      setReplyingTo(null);
-      e.target.value = "";
+    // Send each file as a separate message
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const url = await uploadFile(file);
+      if (!url) continue;
+      socket.emit("send_message", {
+        conversationId,
+        receiverId: currentActiveUser.id,
+        content: file.name,
+        fileUrl: url,
+        type: msgType,
+        replyToId: i === 0 ? (replyingTo?.id || null) : null,
+      });
     }
+    setReplyingTo(null);
+    // Reset input so same files can be selected again
+    e.target.value = "";
   };
 
   const toggleRecording = async () => {
@@ -885,8 +853,8 @@ const ChatInput = memo(({
           <button
             type="button"
             onClick={() => setShowAttachMenu(!showAttachMenu)}
-            className={`w-12 h-12 md:w-14 md:h-14 inline-flex items-center justify-center p-0 rounded-2xl md:rounded-[2rem] transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer 
-              ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20' 
+            className={`w-12 h-12 md:w-14 md:h-14 inline-flex items-center justify-center p-0 rounded-2xl md:rounded-[2rem] transition-all duration-200 ${showAttachMenu || scheduleTime || selfDestructTimer
+              ? 'bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/20'
               : 'bg-[var(--color-chat-bg)] text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] shadow-sm'} ${isDoodleMode ? 'doodle-border' : ''}`}
           >
             <Plus className={`w-6 h-6 transition-transform duration-200 ${showAttachMenu ? 'rotate-45' : ''} ${isDoodleMode && (showAttachMenu || scheduleTime || selfDestructTimer) ? 'animate-wobbly' : ''}`} />
@@ -1167,7 +1135,7 @@ export default function ChatWindow({
       const data = await res.json();
       setMessages(data);
       setIsLoadingMessages(false);
-      
+
       // Wait for React to render messages before scrolling
       requestAnimationFrame(() => {
         setTimeout(() => {
@@ -1229,7 +1197,7 @@ export default function ChatWindow({
     if (!socket || !currentUser) return;
 
     let backupMessages: Message[] = [];
-    
+
     // Optimistic UI update
     setMessages(prev => {
       backupMessages = prev;
@@ -1237,7 +1205,7 @@ export default function ChatWindow({
         if (msg.id === msgId) {
           const reactions = msg.reactions || [];
           const existing = reactions.find(r => r.user?.id === currentUser.id);
-          
+
           if (existing && existing.emoji === emoji) {
             return { ...msg, reactions: reactions.filter(r => r.id !== existing.id) };
           } else if (existing) {
@@ -1425,7 +1393,7 @@ export default function ChatWindow({
                   skipIndices.add(startIdx + k);
                 }
               }
-              
+
               return messages.map((msg, index) => {
                 if (skipIndices.has(index)) return null;
 
@@ -1460,20 +1428,20 @@ export default function ChatWindow({
                 );
               });
             })()}
-        {isTyping && (
-          <div className="flex flex-col items-start space-y-1 mb-2 ml-2 animate-in fade-in duration-300">
-            <span className="text-[10px] text-[var(--color-text-secondary)] font-medium animate-pulse ml-2">
-              {currentActiveUser.name} is typing...
-            </span>
-            <div className="bg-[var(--color-glass-bg)] backdrop-blur-md border border-[var(--color-glass-border)] text-[var(--color-text-main)] px-3 py-2 rounded-[2rem] rounded-bl-sm shadow-sm flex items-center space-x-1 w-max">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "0ms" }}></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "150ms" }}></span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "300ms" }}></span>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-        </>
+            {isTyping && (
+              <div className="flex flex-col items-start space-y-1 mb-2 ml-2 animate-in fade-in duration-300">
+                <span className="text-[10px] text-[var(--color-text-secondary)] font-medium animate-pulse ml-2">
+                  {currentActiveUser.name} is typing...
+                </span>
+                <div className="bg-[var(--color-glass-bg)] backdrop-blur-md border border-[var(--color-glass-border)] text-[var(--color-text-main)] px-3 py-2 rounded-[2rem] rounded-bl-sm shadow-sm flex items-center space-x-1 w-max">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "0ms" }}></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "150ms" }}></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)]/50 animate-bounce" style={{ animationDelay: "300ms" }}></span>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </>
         )}
       </div>
 
