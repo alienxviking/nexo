@@ -35,8 +35,42 @@ export function setupSocketHandlers(io: SocketIOServer) {
       where: { id: userId },
       data: { status: "ONLINE" }
     })
-    .then(() => {
+    .then(async () => {
       io.emit("user_status", { userId, status: "ONLINE", lastSeen: null });
+
+      // Retroactively mark all SENT messages in this user's conversations as DELIVERED
+      // and notify the original senders so their ticks update instantly
+      try {
+        const undelivered = await prisma.message.findMany({
+          where: {
+            status: "SENT",
+            senderId: { not: userId },
+            conversation: { participants: { some: { id: userId } } }
+          },
+          select: { id: true, senderId: true }
+        });
+
+        if (undelivered.length > 0) {
+          await prisma.message.updateMany({
+            where: { id: { in: undelivered.map(m => m.id) } },
+            data: { status: "DELIVERED" }
+          });
+
+          // Notify each sender about their messages being delivered
+          const bySender = new Map<string, string[]>();
+          for (const m of undelivered) {
+            if (!bySender.has(m.senderId)) bySender.set(m.senderId, []);
+            bySender.get(m.senderId)!.push(m.id);
+          }
+          for (const [senderId, messageIds] of bySender) {
+            for (const messageId of messageIds) {
+              io.to(senderId).emit("message_delivered", { messageId });
+            }
+          }
+        }
+      } catch (deliveryErr) {
+        console.error("Error retroactively marking messages as delivered:", deliveryErr);
+      }
     })
     .catch(err => {
       if (err.code === 'P2025') {
