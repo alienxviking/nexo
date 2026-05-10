@@ -18,8 +18,15 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, user, token, isLoading: authLoading } = useAuth();
   const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user && token) {
+      router.push("/chat");
+    }
+  }, [user, token, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

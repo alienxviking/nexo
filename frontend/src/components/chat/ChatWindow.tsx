@@ -285,15 +285,15 @@ const MessageItem = memo(({
 
             {!msg.isDeleted && msg.type === "IMAGE" && msg.fileUrl && (
               <img
-                src={`${API_URL}${msg.fileUrl}`}
+                src={msg.fileUrl.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`}
                 alt="Sent image"
-                className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                onClick={() => onImageClick(`${API_URL}${msg.fileUrl}`)}
-              />
-            )}
-
-            {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
-              <a href={`${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className="group flex items-center space-x-3 p-3 rounded-2xl mb-2 border-2 border-dashed border-[var(--color-border)] transition-all hover:scale-[1.02] text-[var(--color-text-main)] hover:bg-[var(--color-bg)]/50 no-underline">
+                className="max-w-full h-auto max-h-60 rounded-xl mb-2 object-contain cursor-pointer hover:opacity-90 transition-opacity bg-[var(--color-border)]/10"
+                onClick={() => onImageClick(msg.fileUrl!.startsWith("http") ? msg.fileUrl! : `${API_URL}${msg.fileUrl}`)}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                }}
+             {!msg.isDeleted && msg.type === "FILE" && msg.fileUrl && (
+              <a href={msg.fileUrl.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`} target="_blank" rel="noreferrer" className="group flex items-center space-x-3 p-3 rounded-2xl mb-2 border-2 border-dashed border-[var(--color-border)] transition-all hover:scale-[1.02] text-[var(--color-text-main)] hover:bg-[var(--color-bg)]/50 no-underline">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-[var(--color-primary)]/10">
                   <FileIcon className="w-5 h-5 text-[var(--color-primary)]" />
                 </div>
@@ -304,12 +304,12 @@ const MessageItem = memo(({
                 <Download className="w-4 h-4 ml-1 opacity-50 group-hover:opacity-100 transition-opacity shrink-0 text-[var(--color-primary)]" />
               </a>
             )}
-
             {!msg.isDeleted && msg.type === "VOICE" && msg.fileUrl && (
               <div className="mb-1">
-                <VoicePlayer src={`${API_URL}${msg.fileUrl}`} isMe={isMe} />
+                <VoicePlayer src={msg.fileUrl.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`} isMe={isMe} />
               </div>
             )}
+
 
             {(msg.type === "TEXT" || msg.isDeleted) && (
               <div className={`leading-relaxed break-words ${isEmojiOnly ? "flex flex-wrap gap-2 py-3 justify-center min-h-[4rem]" : "text-[15px]"}`}>
@@ -514,20 +514,24 @@ const ImageGroupBubble = memo(({
           style={{ maxWidth: count === 1 ? "280px" : "320px" }}
         >
           {group.map((msg, i) => {
-            // For 3 images: first image spans full width
             const isFirstOfThree = count === 3 && i === 0;
+            const fullUrl = msg.fileUrl?.startsWith("http") ? msg.fileUrl : `${API_URL}${msg.fileUrl}`;
+            
             return (
               <div
                 key={msg.id}
                 id={`msg-${msg.id}`}
-                className={`relative overflow-hidden cursor-pointer group/img ${isFirstOfThree ? "col-span-2" : ""}`}
+                className={`relative overflow-hidden cursor-pointer group/img bg-[var(--color-border)]/20 ${isFirstOfThree ? "col-span-2" : ""}`}
                 style={{ aspectRatio: isFirstOfThree ? "2/1" : "1/1" }}
-                onClick={() => onImageClick(`${API_URL}${msg.fileUrl}`)}
+                onClick={() => onImageClick(fullUrl)}
               >
                 <img
-                  src={`${API_URL}${msg.fileUrl}`}
+                  src={fullUrl}
                   alt="Sent image"
                   className="w-full h-full object-cover transition-opacity group-hover/img:opacity-90"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.opacity = "0.5";
+                  }}
                 />
               </div>
             );
@@ -914,6 +918,7 @@ export default function ChatWindow({
   onBack?: () => void;
 }) {
   const { token, user: currentUser } = useAuth();
+  const router = useRouter();
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
@@ -1385,19 +1390,18 @@ export default function ChatWindow({
         ) : (
           <>
             {(() => {
+              // Memoize groupings based on messages array
               const imageGroups = computeImageGroups(messages);
-              // Build a set of indices that are part of a group but NOT the first
               const skipIndices = new Set<number>();
               for (const [startIdx, group] of imageGroups) {
                 for (let k = 1; k < group.length; k++) {
                   skipIndices.add(startIdx + k);
                 }
               }
+              
               return messages.map((msg, index) => {
-                // Skip images that are continuation of a group
                 if (skipIndices.has(index)) return null;
 
-                // If this index starts an image group, render the group
                 if (imageGroups.has(index)) {
                   return (
                     <ImageGroupBubble
@@ -1409,7 +1413,6 @@ export default function ChatWindow({
                   );
                 }
 
-                // Normal single message
                 return (
                   <MessageItem
                     key={msg.id}
