@@ -657,13 +657,29 @@ const ChatInput = memo(({
     prevEditingRef.current = editingMessage;
   }, [editingMessage, replyingTo]);
 
+  // Upload file to server (Supabase Storage) via REST endpoint
   const uploadFile = async (file: File): Promise<string | null> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(file);
-    });
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${API_URL}/api/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        console.error("Upload failed:", res.statusText);
+        return null;
+      }
+
+      const data = await res.json();
+      return data.url; // Persistent Supabase Storage URL
+    } catch (err) {
+      console.error("Upload error:", err);
+      return null;
+    }
   };
 
   const handleSend = (e: React.FormEvent) => {
@@ -748,15 +764,14 @@ const ChatInput = memo(({
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        
-        // Convert to Base64 for storage-less persistence
-        const base64 = await uploadFile(file);
-        if (!base64) continue;
+
+        // Create a local preview URL for optimistic UI (images only)
+        const localPreview = msgType === "IMAGE" ? URL.createObjectURL(file) : undefined;
 
         const tempId = `temp-${Date.now()}-${i}`;
         const now = new Date().toISOString();
 
-        // Optimistic UI for images/files
+        // Optimistic UI — show immediately with local preview
         const optimisticMsg: Message = {
           id: tempId,
           content: file.name,
@@ -765,22 +780,31 @@ const ChatInput = memo(({
           status: "SENT",
           createdAt: now,
           type: msgType,
-          fileUrl: base64,
+          fileUrl: localPreview || undefined,
           replyTo: i === 0 && replyingTo ? {
             id: replyingTo.id,
             content: replyingTo.content,
             sender: { id: replyingTo.senderId, name: replyingTo.senderId === currentUser.id ? currentUser.name : currentActiveUser.name }
           } : null,
         };
-        
+
         setMessages(prev => [...prev, optimisticMsg]);
         setTimeout(() => scrollToBottom(), 50);
 
+        // Upload to Supabase Storage via REST
+        const persistentUrl = await uploadFile(file);
+        if (!persistentUrl) {
+          // Remove optimistic message on upload failure
+          setMessages(prev => prev.filter(m => m.id !== tempId));
+          continue;
+        }
+
+        // Send via socket with persistent URL (not base64)
         socket.emit("send_message", {
           conversationId,
           receiverId: currentActiveUser.id,
           content: file.name,
-          fileUrl: base64,
+          fileUrl: persistentUrl,
           type: msgType,
           replyToId: i === 0 ? (replyingTo?.id || null) : null,
           tempId,
@@ -809,6 +833,7 @@ const ChatInput = memo(({
         mediaRecorder.onstop = async () => {
           const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
           const file = new File([blob], "voice_message.webm", { type: 'audio/webm' });
+          // Upload voice recording to Supabase Storage
           const url = await uploadFile(file);
           if (url && socket) {
             socket.emit("send_message", {
